@@ -12,6 +12,7 @@ from flask_cors import CORS
 import yfinance as yf
 import threading
 import time
+import datetime
 from dotenv import load_dotenv
 from pymongo import MongoClient
 
@@ -265,7 +266,8 @@ def get_quote(ticker):
         
         price_1_month_ago = current_price
         try:
-            hist = stock.history(period='1mo')
+            first_day_of_month = datetime.date.today().replace(day=1).strftime('%Y-%m-%d')
+            hist = stock.history(start=first_day_of_month)
             if not hist.empty and len(hist) > 0:
                 price_1_month_ago = float(hist['Close'].iloc[0])
         except Exception:
@@ -331,7 +333,8 @@ def get_bulk_quotes():
                 
                 price_1_month_ago = current_price
                 try:
-                    hist = stock.history(period='1mo')
+                    first_day_of_month = datetime.date.today().replace(day=1).strftime('%Y-%m-%d')
+                    hist = stock.history(start=first_day_of_month)
                     if not hist.empty and len(hist) > 0:
                         price_1_month_ago = float(hist['Close'].iloc[0])
                 except Exception:
