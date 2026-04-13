@@ -63,6 +63,13 @@
                     </div>
                 </div>
                 <div class="card">
+                    <div class="card-icon blue"><i class="fa-solid fa-building-circle-check"></i></div>
+                    <div class="card-info">
+                        <h3>Funding Imob (30d)</h3>
+                        <h2 id="re-monthly-revenue">R$ 0,00</h2>
+                    </div>
+                </div>
+                <div class="card">
                     <div class="card-icon green"><i class="fa-solid fa-arrow-up-right-dots"></i></div>
                     <div class="card-info">
                         <h3>Rentabilidade (Mês)</h3>
@@ -255,24 +262,40 @@
                     </button>
                 </div>
                 
-                <div class="kanban-board">
-                    <div class="kanban-col" data-status="prospeccao" ondragover="allowDrop(event)" ondrop="drop(event)">
-                        <div class="kanban-col-header">Prospecção <span class="badge" id="kb-count-prospeccao">0</span></div>
-                        <div class="kanban-cards" id="kb-prospeccao"></div>
-                    </div>
-                    <div class="kanban-col" data-status="negociacao" ondragover="allowDrop(event)" ondrop="drop(event)">
-                        <div class="kanban-col-header">Em Negociação <span class="badge" id="kb-count-negociacao">0</span></div>
-                        <div class="kanban-cards" id="kb-negociacao"></div>
-                    </div>
-                    <div class="kanban-col" data-status="comprado" ondragover="allowDrop(event)" ondrop="drop(event)">
-                        <div class="kanban-col-header">Comprado <span class="badge" id="kb-count-comprado">0</span></div>
-                        <div class="kanban-cards" id="kb-comprado"></div>
-                    </div>
-                    <div class="kanban-col" data-status="vendido" ondragover="allowDrop(event)" ondrop="drop(event)">
-                        <div class="kanban-col-header">Vendido <span class="badge" id="kb-count-vendido">0</span></div>
-                        <div class="kanban-cards" id="kb-vendido"></div>
-                    </div>
+                <div class="dashboard-grid">
+                    <!-- Cashflow Projection Chart -->
+                    <section class="chart-section glass-panel" style="grid-column: span 2;">
+                        <div class="section-header">
+                            <h2>Projeção de Fluxo de Caixa (Próx 12 Meses)</h2>
+                        </div>
+                        <div class="chart-container" style="height: 350px;">
+                            <canvas id="cashflowChart"></canvas>
+                        </div>
+                    </section>
                 </div>
+                
+                <!-- Detailed Contracts Table -->
+                <section class="portfolio-details glass-panel section-mt" style="margin-top: 24px; padding: 24px;">
+                    <div class="section-header">
+                        <h2>Contratos Ativos</h2>
+                    </div>
+                    <div class="table-responsive" style="overflow-x: auto;">
+                        <table class="premium-table" id="re-contracts-table">
+                            <thead>
+                                <tr>
+                                    <th>Projeto / Cliente</th>
+                                    <th>VGV (Total)</th>
+                                    <th>Já Recebido</th>
+                                    <th>Saldo Restante</th>
+                                    <th style="text-align: right;">Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="kb-prospeccao">
+                                <tr><td colspan="5" class="empty-state">Nenhum contrato ativo.</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </div> <!-- End imobiliaria tab -->
 
         </main>
@@ -288,29 +311,57 @@
             <form id="re-form" style="display: flex; flex-direction: column; gap: 16px;">
                 <input type="hidden" id="re-id">
                 <div class="input-group">
-                    <label>Nome do Projeto / Imóvel</label>
-                    <input type="text" id="re-name" required placeholder="Ex: Terreno Alphaville, Galpão SP...">
+                    <label>Empreendimento / Cliente</label>
+                    <input type="text" id="re-name" required placeholder="Ex: Lote 4 - João Silva">
                 </div>
                 <div style="display: flex; gap: 16px;">
                     <div class="input-group" style="flex: 1;">
-                        <label>Valor Alvo / Fechamento (R$)</label>
+                        <label>VGV Total (R$)</label>
                         <input type="number" id="re-value" required step="0.01" min="0">
                     </div>
                     <div class="input-group" style="flex: 1;">
-                        <label>Status Atual</label>
-                        <select id="re-status" class="premium-select" required>
-                            <option value="prospeccao">Prospecção</option>
-                            <option value="negociacao">Em Negociação</option>
-                            <option value="comprado">Comprado</option>
-                            <option value="vendido">Vendido</option>
-                        </select>
+                        <label>Entrada Recebida (R$)</label>
+                        <input type="number" id="re-downpayment" required step="0.01" min="0">
+                    </div>
+                </div>
+                
+                <h4 style="color: var(--text-secondary); margin-top: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Parcelas Mensais</h4>
+                <div style="display: flex; gap: 16px;">
+                    <div class="input-group" style="flex: 1;">
+                        <label>Qtd Meses</label>
+                        <input type="number" id="re-mensais-qtd" value="0" min="0">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>Valor (R$)</label>
+                        <input type="number" id="re-mensais-val" step="0.01" value="0" min="0">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>1º Vencimento</label>
+                        <input type="date" id="re-mensais-inicio">
+                    </div>
+                </div>
+
+                <h4 style="color: var(--text-secondary); margin-top: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Balões Anuais/Semestrais</h4>
+                <div style="display: flex; gap: 16px;">
+                    <div class="input-group" style="flex: 1;">
+                        <label>Qtd Balões</label>
+                        <input type="number" id="re-balao-qtd" value="0" min="0">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>Valor (R$)</label>
+                        <input type="number" id="re-balao-val" step="0.01" value="0" min="0">
+                    </div>
+                    <div class="input-group" style="flex: 1;">
+                        <label>1º Vencimento</label>
+                        <input type="date" id="re-balao-inicio">
                     </div>
                 </div>
                 <div class="input-group">
-                    <label>Observações / Link</label>
-                    <textarea id="re-notes" rows="3" placeholder="Endereço, contato da corretora, link do anúncio..."></textarea>
+                    <label>Meses entre balões</label>
+                    <input type="number" id="re-balao-freq" value="12" min="1" placeholder="Ex: 12 (Anual)">
                 </div>
-                <button type="submit" class="btn-primary" style="margin-top: 8px;">Salvar Imóvel</button>
+
+                <button type="submit" class="btn-primary" style="margin-top: 8px;">Gerar Contrato</button>
             </form>
         </div>
     </div>

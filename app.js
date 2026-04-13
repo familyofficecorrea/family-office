@@ -1132,84 +1132,197 @@ document.addEventListener('DOMContentLoaded', async () => {
         refreshBtn.addEventListener('click', refreshAllQuotes);
     }
 
-    // ─── Real Estate UI & Logic ───────────────────────────────────────────────
-    window.draggedReId = null;
-
-    window.allowDrop = (ev) => {
-        ev.preventDefault();
-    };
-
-    window.drop = (ev) => {
-        ev.preventDefault();
-        const dropZone = ev.currentTarget;
-        const newStatus = dropZone.getAttribute('data-status');
-        
-        if (window.draggedReId && newStatus) {
-            const re = real_estate.find(r => r.id == window.draggedReId);
-            if (re && re.status !== newStatus) {
-                re.status = newStatus;
-                saveRealEstate();
-                if (typeof updateRealEstateUI === 'function') updateRealEstateUI();
-            }
-        }
-    };
+    // ─── Real Estate Cashflow Logic ───────────────────────────────────────────
+    let cashflowChartObj = null;
 
     window.deleteRealEstate = (id) => {
-        if(confirm("Deseja realmente excluir este projeto imobiliário?")) {
+        if(confirm("Deseja realmente excluir este contrato imobiliário?")) {
             real_estate = real_estate.filter(r => r.id != id);
             saveRealEstate();
             if (typeof updateRealEstateUI === 'function') updateRealEstateUI();
         }
     };
 
+    window.markInstallmentPaid = (reId, instIndex) => {
+        const re = real_estate.find(r => r.id == reId);
+        if (re && re.installments[instIndex]) {
+            re.installments[instIndex].paid = !re.installments[instIndex].paid;
+            if (re.installments[instIndex].paid) {
+                re.downpayment += re.installments[instIndex].value;
+            } else {
+                re.downpayment -= re.installments[instIndex].value;
+            }
+            saveRealEstate();
+            updateRealEstateUI();
+        }
+    };
+
     window.updateRealEstateUI = () => {
-        const cols = { prospeccao: '', negociacao: '', comprado: '', vendido: '' };
-        const counts = { prospeccao: 0, negociacao: 0, comprado: 0, vendido: 0 };
+        let tbody = '';
+        let totalRevenue30d = 0;
+        
+        // Setup dates for projection (next 12 months)
+        const today = new Date();
+        const next30Days = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
+        
+        const projectionMap = {};
+        for(let i=0; i<12; i++) {
+            let d = new Date(today.getFullYear(), today.getMonth() + i, 1);
+            let key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+            projectionMap[key] = { label: `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`, total: 0 };
+        }
 
         real_estate.forEach(re => {
-            const stat = re.status || 'prospeccao';
-            cols[stat] += `
-                <div class="kanban-card" draggable="true" ondragstart="window.draggedReId=${re.id}" id="re-card-${re.id}">
-                    <div class="kanban-card-title">${re.name}</div>
-                    <div class="kanban-card-value">${formatCurrency(re.value)}</div>
-                    ${re.notes ? `<div class="kanban-card-notes">${re.notes}</div>` : ''}
-                    <div class="kanban-card-actions">
-                        <button class="btn-del" onclick="window.deleteRealEstate(${re.id})" title="Excluir"><i class="fa-solid fa-trash"></i></button>
-                    </div>
-                </div>
+            let received = re.downpayment || 0;
+            let total = re.value || 0;
+            let remaining = total - received;
+            
+            // Calculate projections
+            if(re.installments) {
+                re.installments.forEach(inst => {
+                    if(!inst.paid) {
+                        // Tratar timezone para a data (evitar pular mês por fuso)
+                        const d = new Date(inst.date + 'T12:00:00Z');
+                        
+                        if(d >= today && d <= next30Days) {
+                            totalRevenue30d += inst.value;
+                        }
+                        
+                        // Chart Projection
+                        let pKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
+                        if(projectionMap[pKey]) {
+                            projectionMap[pKey].total += inst.value;
+                        }
+                    }
+                });
+            }
+
+            tbody += `
+                <tr>
+                    <td class="asset-name" style="color: #fff; font-weight: 600;">${re.name}</td>
+                    <td>${formatCurrency(total)}</td>
+                    <td style="color: var(--accent-green); font-weight: 500;">${formatCurrency(received)}</td>
+                    <td style="color: var(--accent-gold); font-weight: 600;">${formatCurrency(remaining)}</td>
+                    <td style="text-align: right;">
+                        <button class="btn-del" onclick="window.deleteRealEstate(${re.id})" title="Excluir" style="background:none; border:none; color:#FF3D57; cursor:pointer;" class="btn-filter"><i class="fa-solid fa-trash"></i></button>
+                    </td>
+                </tr>
             `;
-            if(counts[stat] !== undefined) counts[stat]++;
         });
 
-        Object.keys(cols).forEach(stat => {
-            const colEl = document.getElementById(`kb-${stat}`);
-            const countEl = document.getElementById(`kb-count-${stat}`);
-            if (colEl) colEl.innerHTML = cols[stat];
-            if (countEl) countEl.innerText = counts[stat];
-        });
+        const listEl = document.getElementById('kb-prospeccao'); // Reusing ID from table body
+        if (listEl) {
+            listEl.innerHTML = real_estate.length > 0 ? tbody : '<tr><td colspan="5" class="empty-state">Nenhum contrato ativo.</td></tr>';
+        }
+
+        // Update Dashboard Summary Widget
+        const revEl = document.getElementById('re-monthly-revenue');
+        if (revEl) revEl.innerText = formatCurrency(totalRevenue30d);
+        
+        // Update Chart
+        const chartLabels = Object.values(projectionMap).map(v => v.label);
+        const chartData = Object.values(projectionMap).map(v => v.total);
+        
+        const ctx = document.getElementById('cashflowChart');
+        if (ctx) {
+            if (cashflowChartObj) {
+                cashflowChartObj.data.labels = chartLabels;
+                cashflowChartObj.data.datasets[0].data = chartData;
+                cashflowChartObj.update();
+            } else {
+                cashflowChartObj = new Chart(ctx.getContext('2d'), {
+                    type: 'bar',
+                    data: {
+                        labels: chartLabels,
+                        datasets: [{
+                            label: 'Recebimentos Futuros',
+                            data: chartData,
+                            backgroundColor: 'rgba(41, 98, 255, 0.7)',
+                            borderColor: '#2962FF',
+                            borderWidth: 1,
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: { display: false },
+                            tooltip: { 
+                                callbacks: { 
+                                    label: (c) => formatCurrency(c.raw) 
+                                } 
+                            }
+                        },
+                        scales: {
+                            y: { ticks: { callback: (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumSignificantDigits: 3, notation:'compact' }).format(val) }, grid: { color: 'rgba(255,255,255,0.05)' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
+        }
     };
 
     const reForm = document.getElementById('re-form');
     if (reForm) {
         reForm.addEventListener('submit', (e) => {
             e.preventDefault();
-            const id = document.getElementById('re-id').value;
             const name = document.getElementById('re-name').value;
-            const value = parseFloat(document.getElementById('re-value').value);
-            const status = document.getElementById('re-status').value;
-            const notes = document.getElementById('re-notes').value;
+            const value = parseFloat(document.getElementById('re-value').value) || 0;
+            const downpayment = parseFloat(document.getElementById('re-downpayment').value) || 0;
+            
+            // Mensais
+            const mensaisQtd = parseInt(document.getElementById('re-mensais-qtd').value) || 0;
+            const mensaisVal = parseFloat(document.getElementById('re-mensais-val').value) || 0;
+            const mensaisInicioStr = document.getElementById('re-mensais-inicio').value;
+            
+            // Balões
+            const balaoQtd = parseInt(document.getElementById('re-balao-qtd').value) || 0;
+            const balaoVal = parseFloat(document.getElementById('re-balao-val').value) || 0;
+            const balaoInicioStr = document.getElementById('re-balao-inicio').value;
+            const balaoFreq = parseInt(document.getElementById('re-balao-freq').value) || 12;
 
-            if (id) {
-                const re = real_estate.find(r => r.id == id);
-                if (re) {
-                    re.name = name; re.value = value; re.status = status; re.notes = notes;
+            const installments = [];
+            
+            // Generate Monthly
+            if (mensaisQtd > 0 && mensaisVal > 0 && mensaisInicioStr) {
+                // T + 12:00:00Z previne fuso de roubar 1 dia no Javascript local
+                const mensaisInicio = new Date(mensaisInicioStr + 'T12:00:00Z');
+                for (let i=0; i<mensaisQtd; i++) {
+                    let d = new Date(mensaisInicio.getTime());
+                    d.setMonth(d.getMonth() + i);
+                    installments.push({
+                        type: 'Mensal',
+                        value: mensaisVal,
+                        date: d.toISOString().split('T')[0],
+                        paid: false
+                    });
                 }
-            } else {
-                real_estate.push({
-                    id: Date.now(),
-                    name, value, status, notes
-                });
             }
+            
+            // Generate Baloes
+            if (balaoQtd > 0 && balaoVal > 0 && balaoInicioStr) {
+                const balaoInicio = new Date(balaoInicioStr + 'T12:00:00Z');
+                for (let i=0; i<balaoQtd; i++) {
+                    let d = new Date(balaoInicio.getTime());
+                    d.setMonth(d.getMonth() + (i * balaoFreq));
+                    installments.push({
+                        type: 'Balão',
+                        value: balaoVal,
+                        date: d.toISOString().split('T')[0],
+                        paid: false
+                    });
+                }
+            }
+
+            real_estate.push({
+                id: Date.now(),
+                name,
+                value,
+                downpayment,
+                installments
+            });
 
             saveRealEstate();
             updateRealEstateUI();
