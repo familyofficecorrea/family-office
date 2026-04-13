@@ -12,6 +12,10 @@ from flask_cors import CORS
 import yfinance as yf
 import threading
 import time
+from dotenv import load_dotenv
+from pymongo import MongoClient
+
+load_dotenv()
 
 # Diretório onde ficam os arquivos estáticos (index.html, style.css, app.js)
 STATIC_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -34,14 +38,42 @@ def serve_js():
     return send_from_directory(STATIC_DIR, 'app.js')
 
 
-# ─── Persistência de Ativos (JSON centralizado) ─────────────────────────────
+# ─── Persistência de Ativos (MongoDB ou JSON Local) ─────────────────────────────
 ASSETS_FILE = os.path.join(STATIC_DIR, 'assets_data.json')
+MONGO_URI = os.getenv('MONGO_URI')
+
 _assets_lock = threading.Lock()
 _assets_version = 0  # Incrementado a cada modificação
 
+# Configura MongoDB se houver URI
+mongo_client = None
+mongo_db = None
+mongo_col = None
+
+if MONGO_URI:
+    try:
+        mongo_client = MongoClient(MONGO_URI, serverSelectionTimeoutMS=5000)
+        mongo_client.admin.command('ping') # Testa a conexão
+        mongo_db = mongo_client['family_office']
+        mongo_col = mongo_db['portfolio']
+        print("[INIT] Conectado ao MongoDB com sucesso!")
+    except Exception as e:
+        print(f"[INIT ERROR] Falha ao conectar no MongoDB. Usando JSON local. Erro: {e}")
+        mongo_client = None
 
 def _load_assets():
-    """Carrega ativos do arquivo JSON."""
+    """Carrega ativos do MongoDB (nuvem) ou do arquivo JSON (local)."""
+    if mongo_client is not None and mongo_col is not None:
+        try:
+            doc = mongo_col.find_one({"_id": "assets_data"})
+            if doc and 'assets' in doc:
+                return doc['assets']
+            return []
+        except Exception as e:
+            print(f"[MONGO ERROR] Erro ao carregar ativos: {e}")
+            return []
+
+    # Fallback para JSON local
     if os.path.exists(ASSETS_FILE):
         try:
             with open(ASSETS_FILE, 'r', encoding='utf-8') as f:
@@ -52,10 +84,23 @@ def _load_assets():
 
 
 def _save_assets(assets_list):
-    """Salva ativos no arquivo JSON e incrementa a versão."""
+    """Salva ativos no MongoDB ou no arquivo JSON e incrementa a versão."""
     global _assets_version
-    with open(ASSETS_FILE, 'w', encoding='utf-8') as f:
-        json.dump(assets_list, f, ensure_ascii=False, indent=2)
+    
+    if mongo_client is not None and mongo_col is not None:
+        try:
+             mongo_col.update_one(
+                 {"_id": "assets_data"}, 
+                 {"$set": {"assets": assets_list}}, 
+                 upsert=True
+             )
+        except Exception as e:
+             print(f"[MONGO ERROR] Erro ao salvar ativos: {e}")
+    else:
+        # Fallback para JSON local
+        with open(ASSETS_FILE, 'w', encoding='utf-8') as f:
+            json.dump(assets_list, f, ensure_ascii=False, indent=2)
+            
     _assets_version += 1
 
 
