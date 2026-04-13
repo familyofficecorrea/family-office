@@ -120,6 +120,7 @@ function refreshUI() {
     if (typeof updateMeusAtivosUI === 'function') updateMeusAtivosUI();
     if (typeof updateDetailedPortfolioUI === 'function') updateDetailedPortfolioUI();
     if (typeof updateTotalEquity === 'function') updateTotalEquity();
+    if (typeof updateRentabilitySummary === 'function') updateRentabilitySummary();
 }
 
 // ─── Live Reload: detecta mudanças nos arquivos de código ────────────────────
@@ -255,6 +256,7 @@ async function refreshAllQuotes() {
     updateMeusAtivosUI();
     updateDetailedPortfolioUI();
     updateTotalEquity();
+    if (typeof updateRentabilitySummary === 'function') updateRentabilitySummary();
 
     if (btn) {
         btn.classList.remove('loading');
@@ -524,10 +526,57 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     filterChartData();
 
-    // Static mocks for CDI
-    document.getElementById('month-profit').innerText = '+1.24%';
-    document.getElementById('month-profit').parentElement.parentElement.querySelector('.card-icon').style.color = 'var(--accent-green)';
-    document.getElementById('cdi-profit').innerText = '+0.85%';
+    // ─── Rentabilidade e CDI Reais ──────────────────────────────────────
+    window.updateRentabilitySummary = () => {
+        let totalVal = 0;
+        let totalInvested = 0;
+        assets.forEach(a => {
+            const invested = a.value || (a.quantity * a.avgPrice);
+            const current = a.simulatedCurrent || invested;
+            totalVal += current;
+            totalInvested += invested;
+        });
+
+        const profitElement = document.getElementById('month-profit');
+        const iconElement = profitElement.parentElement.parentElement.querySelector('.card-icon');
+        
+        if (totalInvested > 0) {
+            const perc = ((totalVal / totalInvested) - 1) * 100;
+            const sign = perc > 0 ? '+' : '';
+            profitElement.innerText = `${sign}${perc.toFixed(2)}%`;
+            if (perc > 0) {
+                iconElement.style.color = 'var(--accent-green)';
+            } else if (perc < 0) {
+                iconElement.style.color = '#FF3D57';
+            } else {
+                iconElement.style.color = '#9BA1A6';
+            }
+        } else {
+            profitElement.innerText = '0.00%';
+            iconElement.style.color = '#9BA1A6';
+        }
+    };
+
+    window.fetchRealCDI = async () => {
+        const cdiElement = document.getElementById('cdi-profit');
+        try {
+            // Consulta API Pública do BCB para a taxa CDI acumulada no último mês (Série 4391)
+            const res = await fetch('https://api.bcb.gov.br/dados/serie/bcdata.sgs.4391/dados/ultimos/1?formato=json');
+            const data = await res.json();
+            if (data && data.length > 0 && data[0].valor) {
+                cdiElement.innerText = `+${data[0].valor}%`;
+            } else {
+                cdiElement.innerText = '—';
+            }
+        } catch (e) {
+            console.warn('Erro ao carregar BCB CDI:', e);
+            cdiElement.innerText = '...';
+        }
+    };
+
+    // Chamadas iniciais
+    updateRentabilitySummary();
+    fetchRealCDI();
 
     // ─── Autocomplete Logic ──────────────────────────────────────────────
     const tickerInput = document.getElementById('asset-ticker');
@@ -754,6 +803,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateMeusAtivosUI();
         updateDetailedPortfolioUI();
         updateTotalEquity();
+        if (typeof updateRentabilitySummary === 'function') updateRentabilitySummary();
 
         // Reset
         form.reset();
@@ -781,6 +831,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateMeusAtivosUI();
             updateDetailedPortfolioUI();
             updateTotalEquity();
+            if (typeof updateRentabilitySummary === 'function') updateRentabilitySummary();
         }
     };
 
