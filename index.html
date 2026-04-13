@@ -28,7 +28,7 @@
             <nav class="menu">
                 <a href="#" class="menu-item active" data-tab="visao-geral"><i class="fa-solid fa-chart-pie"></i> Visão Geral</a>
                 <a href="#" class="menu-item" data-tab="meus-ativos"><i class="fa-solid fa-wallet"></i> Meus Ativos</a>
-                <a href="#" class="menu-item" data-tab="imobiliaria"><i class="fa-solid fa-city"></i> Imobiliária</a>
+                <a href="#" class="menu-item" data-tab="imobiliaria"><i class="fa-solid fa-city"></i> Real Estate</a>
                 <a href="#" class="menu-item"><i class="fa-solid fa-arrow-trend-up"></i> Rentabilidade</a>
                 <a href="#" class="menu-item"><i class="fa-solid fa-gear"></i> Configurações</a>
             </nav>
@@ -65,7 +65,7 @@
                 <div class="card">
                     <div class="card-icon blue"><i class="fa-solid fa-building-circle-check"></i></div>
                     <div class="card-info">
-                        <h3>Funding Imob (30d)</h3>
+                        <h3>Funding Real Estate (30d)</h3>
                         <h2 id="re-monthly-revenue">R$ 0,00</h2>
                     </div>
                 </div>
@@ -253,12 +253,12 @@
                 </section>
             </div> <!-- End meus-ativos tab -->
 
-            <!-- Tab: Imobiliária -->
+            <!-- Tab: Real Estate -->
             <div id="imobiliaria" class="tab-content">
                 <div class="section-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
-                    <h2>Gestão de Imóveis e Negociações</h2>
+                    <h2>Gestão de Real Estate</h2>
                     <button class="btn-primary" id="btn-add-real-estate" onclick="document.getElementById('modal-real-estate').classList.add('visible')">
-                        <i class="fa-solid fa-plus"></i> Novo Imóvel
+                        <i class="fa-solid fa-plus"></i> Novo Contrato
                     </button>
                 </div>
                 
@@ -305,7 +305,7 @@
     <div id="modal-real-estate" class="modal-overlay">
         <div class="modal-content glass-panel" style="max-width: 500px; width: 100%;">
             <div class="section-header" style="margin-bottom: 20px;">
-                <h3 id="re-modal-title">Adicionar Projeto Imobiliário</h3>
+                <h3 id="re-modal-title">Novo Contrato de Real Estate</h3>
                 <button class="btn-close" type="button" onclick="document.getElementById('modal-real-estate').classList.remove('visible')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
             </div>
             <form id="re-form" style="display: flex; flex-direction: column; gap: 16px;">

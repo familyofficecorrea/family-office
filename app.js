@@ -1157,6 +1157,37 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    window.addPayment = (id) => {
+        let re = real_estate.find(r => r.id === id);
+        if(!re) return;
+        let p = prompt(`Qual o valor recebido para '${re.name}'?`);
+        if(p) {
+            let val = parseFloat(p.replace(',', '.'));
+            if(!isNaN(val) && val > 0) {
+                re.downpayment += val;
+                
+                // Amortiza das parcelas abertas mais antigas
+                if(re.installments) {
+                    let toDeduct = val;
+                    re.installments.sort((a,b) => new Date(a.date) - new Date(b.date));
+                    for(let inst of re.installments) {
+                        if(!inst.paid && toDeduct > 0) {
+                            if(inst.value <= toDeduct) {
+                                toDeduct -= inst.value;
+                                inst.paid = true;
+                            } else {
+                                inst.value -= toDeduct;
+                                toDeduct = 0;
+                            }
+                        }
+                    }
+                }
+                saveRealEstate();
+                if (typeof updateRealEstateUI === 'function') updateRealEstateUI();
+            }
+        }
+    };
+
     window.updateRealEstateUI = () => {
         let tbody = '';
         let totalRevenue30d = 0;
@@ -1204,6 +1235,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <td style="color: var(--accent-green); font-weight: 500;">${formatCurrency(received)}</td>
                     <td style="color: var(--accent-gold); font-weight: 600;">${formatCurrency(remaining)}</td>
                     <td style="text-align: right;">
+                        <button onclick="window.addPayment(${re.id})" title="Lançar Pagamento Recebido" style="background:var(--accent-green); border:none; color:#131722; cursor:pointer; font-size:11px; font-weight:600; padding:4px 8px; border-radius:4px; margin-right:8px;"><i class="fa-solid fa-plus"></i></button>
                         <button class="btn-del" onclick="window.deleteRealEstate(${re.id})" title="Excluir" style="background:none; border:none; color:#FF3D57; cursor:pointer;" class="btn-filter"><i class="fa-solid fa-trash"></i></button>
                     </td>
                 </tr>
