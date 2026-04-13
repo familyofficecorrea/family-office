@@ -183,40 +183,7 @@
                     </div>
                 </section>
             </div>
-            
-            <!-- Detailed Portfolio Table -->
-            <section class="portfolio-details glass-panel section-mt" style="margin-top: 24px; padding: 24px;">
-                <div class="section-header">
-                    <h2>Meus Ativos em Carteira</h2>
-                    <button class="btn-refresh" id="btn-refresh-quotes" title="Atualizar Cotações">
-                        <i class="fa-solid fa-arrows-rotate"></i>
-                        Atualizar Preços
-                    </button>
-                </div>
-                <div class="table-responsive" style="overflow-x: auto;">
-                    <table class="premium-table" id="detailed-portfolio-table">
-                        <thead>
-                            <tr>
-                                <th>Ativo</th>
-                                <th>Cotas</th>
-                                <th>Preço Médio</th>
-                                <th>Valor Investido</th>
-                                <th>Preço Atual</th>
-                                <th>Rentabilidade</th>
-                                <th>Valor Atual</th>
-                            </tr>
-                        </thead>
-                        <tbody id="detailed-asset-list">
-                            <!-- Populated dynamically by app.js -->
-                            <tr>
-                                <td colspan="7" class="empty-state" style="text-align: center; color: var(--text-secondary); padding: 20px;">
-                                    Nenhum ativo adicionado ainda.
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </section>
+            </div> <!-- Fim da dashboard-grid da visão geral -->
             </div> <!-- End visao-geral tab -->
 
             <!-- Tab: Meus Ativos -->
@@ -243,6 +210,40 @@
                         </div>
                     </section>
                 </div>
+                
+                <!-- Detailed Portfolio Table -->
+                <section class="portfolio-details glass-panel section-mt" style="margin-top: 24px; padding: 24px;">
+                    <div class="section-header">
+                        <h2>Tabela Detalhada por Ativo</h2>
+                        <button class="btn-refresh" id="btn-refresh-quotes" title="Atualizar Cotações">
+                            <i class="fa-solid fa-arrows-rotate"></i>
+                            Atualizar Preços
+                        </button>
+                    </div>
+                    <div class="table-responsive" style="overflow-x: auto;">
+                        <table class="premium-table" id="detailed-portfolio-table">
+                            <thead>
+                                <tr>
+                                    <th>Ativo</th>
+                                    <th>Cotas</th>
+                                    <th>Preço Médio</th>
+                                    <th>Valor Investido</th>
+                                    <th>Preço Atual</th>
+                                    <th>Rentabilidade</th>
+                                    <th>Valor Atual</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detailed-asset-list">
+                                <!-- Populated dynamically by app.js -->
+                                <tr>
+                                    <td colspan="7" class="empty-state" style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                                        Nenhum ativo adicionado ainda.
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </div> <!-- End meus-ativos tab -->
 
         </main>
