@@ -243,6 +243,9 @@ async function refreshAllQuotes() {
                 a.currentPrice = q.price;
                 a.simulatedCurrent = a.quantity * q.price;
                 a.name = q.name || a.name;
+                if (q.price1MonthAgo) {
+                    a.price1MonthAgo = q.price1MonthAgo;
+                }
             }
         });
         
@@ -529,19 +532,31 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ─── Rentabilidade e CDI Reais ──────────────────────────────────────
     window.updateRentabilitySummary = () => {
         let totalVal = 0;
-        let totalInvested = 0;
+        let totalPastVal = 0;
+        
         assets.forEach(a => {
             const invested = a.value || (a.quantity * a.avgPrice);
             const current = a.simulatedCurrent || invested;
+            
+            // Para as ações puxadas do Yahoo, temos o valor exato no dia 1 do mês passado
+            // Para renda fixa manual (sem ticker online), assumimos que rendeu o CDI padrão
+            // (Para simplificar e não distorcer, usamos o currentPrice para os manuais, 
+            // significando variação zero no mês se o usuário não o atualizou manualmente)
+            let pastMultiplier = a.price1MonthAgo || (a.currentPrice || a.avgPrice);
+            let past = a.quantity * pastMultiplier;
+            
+            // Fallback
+            if (!past || past === 0) past = current;
+            
             totalVal += current;
-            totalInvested += invested;
+            totalPastVal += past;
         });
 
         const profitElement = document.getElementById('month-profit');
         const iconElement = profitElement.parentElement.parentElement.querySelector('.card-icon');
         
-        if (totalInvested > 0) {
-            const perc = ((totalVal / totalInvested) - 1) * 100;
+        if (totalPastVal > 0) {
+            const perc = ((totalVal / totalPastVal) - 1) * 100;
             const sign = perc > 0 ? '+' : '';
             profitElement.innerText = `${sign}${perc.toFixed(2)}%`;
             if (perc > 0) {
@@ -753,6 +768,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         // Buscar preço atual se possível
         let currentPrice = execPrice;
+        let price1MonthAgo = execPrice;
         let assetName = selectedTickerData?.name || ticker;
         
         if (apiOnline && isRealTicker(ticker)) {
@@ -760,6 +776,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (quote && quote.price > 0) {
                 currentPrice = quote.price;
                 assetName = quote.name || ticker;
+                price1MonthAgo = quote.price1MonthAgo || currentPrice;
             }
         }
         
@@ -776,6 +793,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             existing.value = totalQty * newAvgPrice;
             existing.currentPrice = currentPrice;
             existing.simulatedCurrent = totalQty * currentPrice;
+            existing.price1MonthAgo = price1MonthAgo;
             
             const newDateObj = new Date(dateInput.value);
             if (newDateObj > new Date(existing.lastDate)) existing.lastDate = dateInput.value;
@@ -789,6 +807,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 avgPrice: execPrice,
                 value: totalValue,
                 currentPrice: currentPrice,
+                price1MonthAgo: price1MonthAgo,
                 simulatedCurrent: quantity * currentPrice,
                 category: categoryInput.value,
                 firstDate: dateInput.value,

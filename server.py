@@ -263,11 +263,20 @@ def get_quote(ticker):
         current_price = info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose', 0)
         previous_close = info.get('previousClose') or info.get('regularMarketPreviousClose', 0)
         
+        price_1_month_ago = current_price
+        try:
+            hist = stock.history(period='1mo')
+            if not hist.empty and len(hist) > 0:
+                price_1_month_ago = float(hist['Close'].iloc[0])
+        except Exception:
+            pass
+        
         data = {
             'symbol': ticker,
             'name': info.get('shortName') or info.get('longName') or ticker,
             'price': current_price,
             'previousClose': previous_close,
+            'price1MonthAgo': price_1_month_ago,
             'currency': info.get('currency', 'BRL'),
             'exchange': info.get('exchange', ''),
             'marketCap': info.get('marketCap', 0),
@@ -320,11 +329,20 @@ def get_bulk_quotes():
                 current_price = info.get('currentPrice') or info.get('regularMarketPrice') or info.get('previousClose', 0)
                 previous_close = info.get('previousClose') or info.get('regularMarketPreviousClose', 0)
                 
+                price_1_month_ago = current_price
+                try:
+                    hist = stock.history(period='1mo')
+                    if not hist.empty and len(hist) > 0:
+                        price_1_month_ago = float(hist['Close'].iloc[0])
+                except Exception:
+                    pass
+                
                 data = {
                     'symbol': t,
                     'name': info.get('shortName') or info.get('longName') or t,
                     'price': current_price,
                     'previousClose': previous_close,
+                    'price1MonthAgo': price_1_month_ago,
                     'currency': info.get('currency', 'BRL'),
                     'type': info.get('quoteType', 'EQUITY'),
                     'success': True
