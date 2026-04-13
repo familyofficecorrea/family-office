@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Family Office Dashboard</title>
+    <meta name="description" content="Painel de controle patrimonial com cotações em tempo real">
+    
+    <!-- Google Fonts: Inter -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    
+    <!-- FontAwesome for Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="dashboard-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <i class="fa-solid fa-building-columns"></i>
+                <h2>Family Office</h2>
+            </div>
+            <nav class="menu">
+                <a href="#" class="menu-item active" data-tab="visao-geral"><i class="fa-solid fa-chart-pie"></i> Visão Geral</a>
+                <a href="#" class="menu-item" data-tab="meus-ativos"><i class="fa-solid fa-wallet"></i> Meus Ativos</a>
+                <a href="#" class="menu-item"><i class="fa-solid fa-arrow-trend-up"></i> Rentabilidade</a>
+                <a href="#" class="menu-item"><i class="fa-solid fa-gear"></i> Configurações</a>
+            </nav>
+            <div class="sidebar-footer">
+                <p>Motor: <span id="api-status" class="status-offline">Offline</span></p>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <header class="top-header">
+                <div>
+                    <h1 class="page-title">Visão Geral da Carteira</h1>
+                    <p class="subtitle">Acompanhe seus ativos e compare com o mercado</p>
+                </div>
+                <div class="user-profile">
+                    <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                    <span>Administrador</span>
+                </div>
+            </header>
+
+            <!-- SPA Tabs Wrapper -->
+            <div id="visao-geral" class="tab-content active">
+
+                <!-- Summary Cards -->
+                <section class="summary-cards">
+                <div class="card premium-card">
+                    <div class="card-icon"><i class="fa-solid fa-sack-dollar"></i></div>
+                    <div class="card-info">
+                        <h3>Patrimônio Total</h3>
+                        <h2 id="total-equity">R$ 0,00</h2>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-icon green"><i class="fa-solid fa-arrow-up-right-dots"></i></div>
+                    <div class="card-info">
+                        <h3>Rentabilidade (Mês)</h3>
+                        <h2 id="month-profit">0.00%</h2>
+                    </div>
+                </div>
+                <div class="card">
+                    <div class="card-icon blue"><i class="fa-solid fa-scale-balanced"></i></div>
+                    <div class="card-info">
+                        <h3>CDI (Mês)</h3>
+                        <h2 id="cdi-profit">0.00%</h2>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Main Dashboard Area -->
+            <div class="dashboard-grid">
+                <!-- Chart Area -->
+                <section class="chart-section glass-panel">
+                    <div class="section-header">
+                        <h2>Evolução Patrimonial vs CDI</h2>
+                        <div class="chart-controls-wrapper">
+                            <div class="quick-filters" id="quick-filters">
+                                <button class="btn-filter" data-range="lastMonth">Mês Passado</button>
+                                <button class="btn-filter" data-range="6M">6 Meses</button>
+                                <button class="btn-filter" data-range="12M">12 Meses</button>
+                                <button class="btn-filter" data-range="lastYear">Ano Passado</button>
+                                <button class="btn-filter active" data-range="thisYear">Ano Atual</button>
+                                <button class="btn-filter" data-range="all">Período Todo</button>
+                            </div>
+                            <div class="chart-actions date-filters">
+                                <input type="date" id="chart-start-date" class="date-filter" aria-label="Data Inicial">
+                                <span style="color: var(--text-secondary); font-size: 13px;">até</span>
+                                <input type="date" id="chart-end-date" class="date-filter" aria-label="Data Final">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chart-container">
+                        <canvas id="growthChart"></canvas>
+                    </div>
+                </section>
+
+                <!-- Asset Manager -->
+                <section class="asset-manager glass-panel">
+                    <div class="section-header">
+                        <h2>Adicionar Ativo</h2>
+                    </div>
+                    <form id="add-asset-form">
+                        <!-- Ticker com Autocomplete -->
+                        <div class="input-group autocomplete-wrapper">
+                            <label for="asset-ticker">Ticker do Ativo</label>
+                            <div class="input-with-icon">
+                                <i class="fa-solid fa-magnifying-glass input-icon"></i>
+                                <input type="text" id="asset-ticker" placeholder="Ex: PETR4.SA, VALE3.SA, BTC-USD" autocomplete="off" required>
+                                <div id="ticker-spinner" class="input-spinner" style="display:none;">
+                                    <i class="fa-solid fa-circle-notch fa-spin"></i>
+                                </div>
+                            </div>
+                            <div id="autocomplete-dropdown" class="autocomplete-dropdown"></div>
+                            <div id="selected-ticker-info" class="selected-ticker-info" style="display:none;">
+                                <span id="ticker-badge" class="ticker-badge"></span>
+                                <span id="ticker-full-name" class="ticker-name-small"></span>
+                            </div>
+                        </div>
+                        
+                        <!-- Cotas -->
+                        <div class="input-group">
+                            <label for="asset-quantity">Quantidade de Cotas</label>
+                            <input type="number" id="asset-quantity" placeholder="Ex: 100" step="0.000001" min="0" required>
+                        </div>
+                        
+                        <!-- Preço Executado -->
+                        <div class="input-group">
+                            <label for="asset-exec-price">Preço Executado (R$)</label>
+                            <input type="number" id="asset-exec-price" placeholder="Ex: 38.50" step="0.01" min="0" required>
+                        </div>
+
+                        <!-- Cálculo Automático -->
+                        <div class="calc-preview" id="calc-preview" style="display:none;">
+                            <div class="calc-row">
+                                <span class="calc-label">Valor Total:</span>
+                                <span class="calc-value" id="calc-total">R$ 0,00</span>
+                            </div>
+                            <div class="calc-row">
+                                <span class="calc-label">Preço Atual:</span>
+                                <span class="calc-value" id="calc-current-price">—</span>
+                            </div>
+                        </div>
+
+                        <!-- Categoria -->
+                        <div class="input-group">
+                            <label for="asset-category">Categoria</label>
+                            <select id="asset-category" class="premium-select" required>
+                                <option value="Renda Fixa">Renda Fixa</option>
+                                <option value="Renda Variável">Renda Variável</option>
+                                <option value="Fundos Imobiliários">Fundos Imobiliários</option>
+                                <option value="Exterior">Exterior</option>
+                                <option value="Criptoativos">Criptoativos</option>
+                            </select>
+                        </div>
+                        
+                        <!-- Data do Aporte -->
+                        <div class="input-group">
+                            <label for="asset-date">Data do Aporte</label>
+                            <input type="date" id="asset-date" required>
+                        </div>
+                        
+                        <button type="submit" class="btn-primary" id="btn-add-asset">
+                            <i class="fa-solid fa-plus"></i> Adicionar à Carteira
+                        </button>
+                    </form>
+
+                    <div class="recent-assets">
+                        <h3>Últimos Adicionados</h3>
+                        <ul id="asset-list" class="asset-list">
+                            <!-- Assets will be dynamically populated here -->
+                            <li class="empty-state">Nenhum ativo cadastrado.</li>
+                        </ul>
+                    </div>
+                </section>
+            </div>
+            
+            <!-- Detailed Portfolio Table -->
+            <section class="portfolio-details glass-panel section-mt" style="margin-top: 24px; padding: 24px;">
+                <div class="section-header">
+                    <h2>Meus Ativos em Carteira</h2>
+                    <button class="btn-refresh" id="btn-refresh-quotes" title="Atualizar Cotações">
+                        <i class="fa-solid fa-arrows-rotate"></i>
+                        Atualizar Preços
+                    </button>
+                </div>
+                <div class="table-responsive" style="overflow-x: auto;">
+                    <table class="premium-table" id="detailed-portfolio-table">
+                        <thead>
+                            <tr>
+                                <th>Ativo</th>
+                                <th>Cotas</th>
+                                <th>Preço Médio</th>
+                                <th>Valor Investido</th>
+                                <th>Preço Atual</th>
+                                <th>Rentabilidade</th>
+                                <th>Valor Atual</th>
+                            </tr>
+                        </thead>
+                        <tbody id="detailed-asset-list">
+                            <!-- Populated dynamically by app.js -->
+                            <tr>
+                                <td colspan="7" class="empty-state" style="text-align: center; color: var(--text-secondary); padding: 20px;">
+                                    Nenhum ativo adicionado ainda.
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+            </div> <!-- End visao-geral tab -->
+
+            <!-- Tab: Meus Ativos -->
+            <div id="meus-ativos" class="tab-content">
+                <div class="dashboard-grid">
+                    <!-- Macro Allocation Chart -->
+                    <section class="chart-section glass-panel">
+                        <div class="section-header">
+                            <h2>Alocação vs Meta de Domínio</h2>
+                        </div>
+                        <div class="chart-container" style="display: flex; justify-content: center; align-items: center; height: 350px;">
+                            <canvas id="allocationChart"></canvas>
+                        </div>
+                    </section>
+
+                    <!-- Assets Accordion -->
+                    <section class="glass-panel" style="padding: 24px;">
+                        <div class="section-header" style="margin-bottom: 24px;">
+                            <h2>Ativos por Categoria</h2>
+                        </div>
+                        <div id="accordion-container" class="accordion-container">
+                            <!-- Populated dynamically by app.js -->
+                            <div class="empty-state" style="padding: 20px; text-align: center; color: var(--text-secondary);">Nenhum ativo configurado.</div>
+                        </div>
+                    </section>
+                </div>
+            </div> <!-- End meus-ativos tab -->
+
+        </main>
+    </div>
+
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Custom Script -->
+    <script src="app.js"></script>
+</body>
+</html>
