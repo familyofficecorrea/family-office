@@ -41,10 +41,14 @@ def serve_js():
 
 # ─── Persistência de Ativos (MongoDB ou JSON Local) ─────────────────────────────
 ASSETS_FILE = os.path.join(STATIC_DIR, 'assets_data.json')
+REAL_ESTATE_FILE = os.path.join(STATIC_DIR, 'real_estate_data.json')
 MONGO_URI = os.getenv('MONGO_URI')
 
 _assets_lock = threading.Lock()
 _assets_version = 0  # Incrementado a cada modificação
+
+_re_lock = threading.Lock()
+_re_version = 0
 
 # Configura MongoDB se houver URI
 mongo_client = None
@@ -105,6 +109,45 @@ def _save_assets(assets_list):
     _assets_version += 1
 
 
+# ─── Persistência de Imóveis (Real Estate) ──────────────────────────────────
+def _load_real_estate():
+    """Carrega imóveis do MongoDB ou local."""
+    if mongo_client is not None and mongo_col is not None:
+        try:
+            doc = mongo_col.find_one({"_id": "real_estate_data"})
+            if doc and 'real_estate' in doc:
+                return doc['real_estate']
+            return []
+        except Exception as e:
+            print(f"[MONGO ERROR] Erro ao carregar imoveis: {e}")
+            return []
+
+    if os.path.exists(REAL_ESTATE_FILE):
+        try:
+            with open(REAL_ESTATE_FILE, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError):
+            return []
+    return []
+
+def _save_real_estate(re_list):
+    """Salva imóveis e incrementa versão."""
+    global _re_version
+    if mongo_client is not None and mongo_col is not None:
+        try:
+             mongo_col.update_one(
+                 {"_id": "real_estate_data"}, 
+                 {"$set": {"real_estate": re_list}}, 
+                 upsert=True
+             )
+        except Exception as e:
+             print(f"[MONGO ERROR] Erro ao salvar imoveis: {e}")
+    else:
+        with open(REAL_ESTATE_FILE, 'w', encoding='utf-8') as f:
+            json.dump(re_list, f, ensure_ascii=False, indent=2)
+    _re_version += 1
+
+
 # ─── Endpoint: Obter todos os ativos ─────────────────────────────────────────
 @app.route('/api/assets')
 def get_assets():
@@ -134,6 +177,29 @@ def save_assets():
         with _assets_lock:
             _save_assets(assets_list)
         return jsonify({'success': True, 'version': _assets_version, 'count': len(assets_list)})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+# ─── Endpoints de Imóveis (Real Estate) ──────────────────────────────────────
+@app.route('/api/real_estate')
+def get_real_estate():
+    with _re_lock:
+        data = _load_real_estate()
+    return jsonify({'real_estate': data, 'version': _re_version})
+
+@app.route('/api/real_estate/version')
+def get_re_version():
+    return jsonify({'version': _re_version})
+
+@app.route('/api/real_estate', methods=['POST'])
+def save_real_estate_endpoint():
+    try:
+        body = request.get_json()
+        re_list = body.get('real_estate', [])
+        with _re_lock:
+            _save_real_estate(re_list)
+        return jsonify({'success': True, 'version': _re_version, 'count': len(re_list)})
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 

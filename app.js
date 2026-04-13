@@ -22,6 +22,9 @@ let principalData = [];
 let assets = [];
 let _knownVersion = -1;  // Versão conhecida para polling
 
+let real_estate = [];
+let _knownReVersion = -1;
+
 // ─── Migração de assets legados ──────────────────────────────────────────────
 function migrateAsset(a) {
     if (a.ticker && a.quantity !== undefined) return a; // Já migrado
@@ -96,6 +99,37 @@ async function loadAssetsFromServer() {
     return false;
 }
 
+// ─── Real Estate Network ─────────────────────────────────────────────────────
+const saveRealEstate = async () => {
+    try {
+        const res = await fetch(`${API_BASE}/real_estate`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ real_estate }),
+            signal: AbortSignal.timeout(5000)
+        });
+        const data = await res.json();
+        if (data.version) _knownReVersion = data.version;
+    } catch (e) {
+        console.warn('Erro ao salvar imoveis no servidor:', e);
+    }
+};
+
+async function loadRealEstateFromServer() {
+    try {
+        const res = await fetch(`${API_BASE}/real_estate`, { signal: AbortSignal.timeout(5000) });
+        const data = await res.json();
+        if (data.real_estate) {
+            real_estate = data.real_estate;
+            _knownReVersion = data.version;
+            return true;
+        }
+    } catch (e) {
+        console.warn('Erro ao carregar imoveis do servidor:', e);
+    }
+    return false;
+}
+
 // ─── Polling: sincronizar entre dispositivos ─────────────────────────────────
 async function pollForUpdates() {
     try {
@@ -110,6 +144,16 @@ async function pollForUpdates() {
             }
         }
     } catch (e) { /* Servidor offline, ignora */ }
+    
+    // Poll Real Estate API
+    try {
+        const resRe = await fetch(`${API_BASE}/real_estate/version`, { signal: AbortSignal.timeout(3000) });
+        const dataRe = await resRe.json();
+        if (dataRe.version !== _knownReVersion) {
+            const loadedRe = await loadRealEstateFromServer();
+            if (loadedRe && typeof updateRealEstateUI === 'function') updateRealEstateUI();
+        }
+    } catch (e) {}
 }
 
 // ─── Atualizar toda a UI de uma vez ──────────────────────────────────────────
@@ -121,6 +165,7 @@ function refreshUI() {
     if (typeof updateDetailedPortfolioUI === 'function') updateDetailedPortfolioUI();
     if (typeof updateTotalEquity === 'function') updateTotalEquity();
     if (typeof updateRentabilitySummary === 'function') updateRentabilitySummary();
+    if (typeof updateRealEstateUI === 'function') updateRealEstateUI();
 }
 
 // ─── Live Reload: detecta mudanças nos arquivos de código ────────────────────
@@ -1087,13 +1132,101 @@ document.addEventListener('DOMContentLoaded', async () => {
         refreshBtn.addEventListener('click', refreshAllQuotes);
     }
 
-    // ─── Carregar ativos do servidor ──────────────────────────────────────
+    // ─── Real Estate UI & Logic ───────────────────────────────────────────────
+    window.draggedReId = null;
+
+    window.allowDrop = (ev) => {
+        ev.preventDefault();
+    };
+
+    window.drop = (ev) => {
+        ev.preventDefault();
+        const dropZone = ev.currentTarget;
+        const newStatus = dropZone.getAttribute('data-status');
+        
+        if (window.draggedReId && newStatus) {
+            const re = real_estate.find(r => r.id == window.draggedReId);
+            if (re && re.status !== newStatus) {
+                re.status = newStatus;
+                saveRealEstate();
+                if (typeof updateRealEstateUI === 'function') updateRealEstateUI();
+            }
+        }
+    };
+
+    window.deleteRealEstate = (id) => {
+        if(confirm("Deseja realmente excluir este projeto imobiliário?")) {
+            real_estate = real_estate.filter(r => r.id != id);
+            saveRealEstate();
+            if (typeof updateRealEstateUI === 'function') updateRealEstateUI();
+        }
+    };
+
+    window.updateRealEstateUI = () => {
+        const cols = { prospeccao: '', negociacao: '', comprado: '', vendido: '' };
+        const counts = { prospeccao: 0, negociacao: 0, comprado: 0, vendido: 0 };
+
+        real_estate.forEach(re => {
+            const stat = re.status || 'prospeccao';
+            cols[stat] += `
+                <div class="kanban-card" draggable="true" ondragstart="window.draggedReId=${re.id}" id="re-card-${re.id}">
+                    <div class="kanban-card-title">${re.name}</div>
+                    <div class="kanban-card-value">${formatCurrency(re.value)}</div>
+                    ${re.notes ? `<div class="kanban-card-notes">${re.notes}</div>` : ''}
+                    <div class="kanban-card-actions">
+                        <button class="btn-del" onclick="window.deleteRealEstate(${re.id})" title="Excluir"><i class="fa-solid fa-trash"></i></button>
+                    </div>
+                </div>
+            `;
+            if(counts[stat] !== undefined) counts[stat]++;
+        });
+
+        Object.keys(cols).forEach(stat => {
+            const colEl = document.getElementById(`kb-${stat}`);
+            const countEl = document.getElementById(`kb-count-${stat}`);
+            if (colEl) colEl.innerHTML = cols[stat];
+            if (countEl) countEl.innerText = counts[stat];
+        });
+    };
+
+    const reForm = document.getElementById('re-form');
+    if (reForm) {
+        reForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const id = document.getElementById('re-id').value;
+            const name = document.getElementById('re-name').value;
+            const value = parseFloat(document.getElementById('re-value').value);
+            const status = document.getElementById('re-status').value;
+            const notes = document.getElementById('re-notes').value;
+
+            if (id) {
+                const re = real_estate.find(r => r.id == id);
+                if (re) {
+                    re.name = name; re.value = value; re.status = status; re.notes = notes;
+                }
+            } else {
+                real_estate.push({
+                    id: Date.now(),
+                    name, value, status, notes
+                });
+            }
+
+            saveRealEstate();
+            updateRealEstateUI();
+            
+            document.getElementById('modal-real-estate').classList.remove('visible');
+            reForm.reset();
+        });
+    }
+
+    // ─── Carregar dados do servidor ──────────────────────────────────────────
     const online = await checkAPIHealth();
     if (online) {
         const loaded = await loadAssetsFromServer();
-        if (!loaded) {
-            console.warn('Sem dados no servidor, usando lista vazia.');
-        }
+        if (!loaded) console.warn('Sem ativos no servidor, usando lista vazia.');
+        
+        const loadedRe = await loadRealEstateFromServer();
+        if (!loadedRe) console.warn('Sem imóveis no servidor, usando lista vazia.');
     }
 
     // ─── Initial Render ──────────────────────────────────────────────────
@@ -1101,6 +1234,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     updateMeusAtivosUI();
     updateDetailedPortfolioUI();
     updateTotalEquity();
+    updateRealEstateUI();
 
     // ─── Auto-refresh cotações ────────────────────────────────────────────
     if (online) {
