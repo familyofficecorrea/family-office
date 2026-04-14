@@ -601,9 +601,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         const iconElement = profitElement.parentElement.parentElement.querySelector('.card-icon');
         
         if (totalPastVal > 0) {
-            const perc = ((totalVal / totalPastVal) - 1) * 100;
+            const profitVal = totalVal - totalPastVal;
+            const perc = (profitVal / totalPastVal) * 100;
             const sign = perc > 0 ? '+' : '';
-            profitElement.innerText = `${sign}${perc.toFixed(2)}%`;
+            profitElement.innerHTML = `${sign}${formatCurrency(profitVal)} <span style="font-size: 14px; opacity: 0.8; font-weight: normal;">(${sign}${perc.toFixed(2)}%)</span>`;
             if (perc > 0) {
                 iconElement.style.color = 'var(--accent-green)';
             } else if (perc < 0) {
@@ -612,7 +613,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 iconElement.style.color = '#9BA1A6';
             }
         } else {
-            profitElement.innerText = '0.00%';
+            profitElement.innerHTML = '0.00% <span style="font-size: 14px; opacity: 0.8; font-weight: normal;">(R$ 0,00)</span>';
             iconElement.style.color = '#9BA1A6';
         }
     };
@@ -901,8 +902,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ─── Update Total Equity ─────────────────────────────────────────────
     window.updateTotalEquity = () => {
-        const total = assets.reduce((sum, a) => sum + (a.simulatedCurrent || a.value), 0);
-        document.getElementById('total-equity').innerText = formatCurrency(total);
+        const totalFinanceiro = assets.reduce((sum, a) => sum + (a.simulatedCurrent || a.value), 0);
+        const totalReRecebido = real_estate.reduce((sum, re) => sum + (re.downpayment || 0), 0);
+        const total = totalFinanceiro + totalReRecebido;
+        document.getElementById('total-equity').innerHTML = formatCurrency(total);
     };
 
     // ─── UI Updates ──────────────────────────────────────────────────────
@@ -1294,6 +1297,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             }
         }
+        
+        if (typeof window.updateTotalEquity === 'function') {
+            window.updateTotalEquity();
+        }
     };
 
     const reForm = document.getElementById('re-form');
@@ -1394,4 +1401,29 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ─── Live Reload: detecta mudanças no código ─────────────────────────
     setInterval(pollForCodeChanges, 3000);  // Código: checa a cada 3 segundos
+
+    // ─── Tabs Adicionar Ativo (Visão Geral) ──────────────────────────────
+    const typeTabs = document.querySelectorAll('.type-tab');
+    typeTabs.forEach(tab => {
+        tab.addEventListener('click', (e) => {
+            typeTabs.forEach(t => {
+                t.classList.remove('active');
+                t.style.background = 'transparent';
+                t.style.borderColor = 'transparent';
+                t.style.color = 'var(--text-secondary)';
+            });
+            const targetTab = e.target;
+            targetTab.classList.add('active');
+            targetTab.style.background = 'var(--bg-primary)';
+            targetTab.style.borderColor = 'rgba(255,255,255,0.1)';
+            targetTab.style.color = '#fff';
+
+            document.getElementById('add-asset-form').style.display = 'none';
+            document.getElementById('add-imob-form').style.display = 'none';
+
+            const targetFormId = targetTab.getAttribute('data-target');
+            document.getElementById(targetFormId).style.display = 'block';
+        });
+    });
+
 });

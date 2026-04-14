@@ -117,6 +117,12 @@
                     <div class="section-header">
                         <h2>Adicionar Ativo</h2>
                     </div>
+                    
+                    <div class="asset-type-tabs" style="display: flex; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 8px;">
+                        <button type="button" class="type-tab active" data-target="add-asset-form" style="flex:1; background: var(--bg-primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px; color: #fff; cursor: pointer; transition: 0.2s; font-weight: 500;">Mercado Financeiro</button>
+                        <button type="button" class="type-tab" data-target="add-imob-form" style="flex:1; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 8px; color: var(--text-secondary); cursor: pointer; transition: 0.2s; font-weight: 500;">Imobiliário</button>
+                    </div>
+
                     <form id="add-asset-form">
                         <!-- Ticker com Autocomplete -->
                         <div class="input-group autocomplete-wrapper">
@@ -180,6 +186,12 @@
                         <button type="submit" class="btn-primary" id="btn-add-asset">
                             <i class="fa-solid fa-plus"></i> Adicionar à Carteira
                         </button>
+                    </form>
+
+                    <form id="add-imob-form" style="display: none;">
+                        <div style="padding: 40px 20px; text-align: center; color: var(--text-secondary); border: 1px dashed rgba(255,255,255,0.1); border-radius: 8px; background: rgba(255,255,255,0.02);">
+                            Aguardando opções de novos campos Imobiliários...
+                        </div>
                     </form>
 
                     <div class="recent-assets">
