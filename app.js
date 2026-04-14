@@ -1371,6 +1371,57 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    const vgReForm = document.getElementById('add-imob-form');
+    if (vgReForm) {
+        vgReForm.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('vg-re-name').value;
+            const value = parseFloat(document.getElementById('vg-re-value').value) || 0;
+            const downpayment = parseFloat(document.getElementById('vg-re-downpayment').value) || 0;
+            
+            const mensaisQtd = parseInt(document.getElementById('vg-re-mensais-qtd').value) || 0;
+            const mensaisVal = parseFloat(document.getElementById('vg-re-mensais-val').value) || 0;
+            const mensaisInicioStr = document.getElementById('vg-re-mensais-inicio').value;
+            
+            const balaoQtd = parseInt(document.getElementById('vg-re-balao-qtd').value) || 0;
+            const balaoVal = parseFloat(document.getElementById('vg-re-balao-val').value) || 0;
+            const balaoInicioStr = document.getElementById('vg-re-balao-inicio').value;
+            const balaoFreq = parseInt(document.getElementById('vg-re-balao-freq').value) || 12;
+
+            const installments = [];
+            
+            if (mensaisQtd > 0 && mensaisVal > 0 && mensaisInicioStr) {
+                const mensaisInicio = new Date(mensaisInicioStr + 'T12:00:00Z');
+                for (let i=0; i<mensaisQtd; i++) {
+                    let d = new Date(mensaisInicio.getTime());
+                    d.setMonth(d.getMonth() + i);
+                    installments.push({ type: 'Mensal', value: mensaisVal, date: d.toISOString().split('T')[0], paid: false });
+                }
+            }
+            
+            if (balaoQtd > 0 && balaoVal > 0 && balaoInicioStr) {
+                const balaoInicio = new Date(balaoInicioStr + 'T12:00:00Z');
+                for (let i=0; i<balaoQtd; i++) {
+                    let d = new Date(balaoInicio.getTime());
+                    d.setMonth(d.getMonth() + (i * balaoFreq));
+                    installments.push({ type: 'Balão', value: balaoVal, date: d.toISOString().split('T')[0], paid: false });
+                }
+            }
+
+            real_estate.push({ id: Date.now(), name, value, downpayment, installments });
+
+            saveRealEstate();
+            updateRealEstateUI();
+            
+            vgReForm.reset();
+            const btn = vgReForm.querySelector('.btn-primary');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Adicionado com Sucesso!';
+            btn.style.backgroundColor = 'var(--accent-green)';
+            setTimeout(() => { btn.innerHTML = originalText; btn.style.backgroundColor = ''; }, 2000);
+        });
+    }
+
     // ─── Carregar dados do servidor ──────────────────────────────────────────
     const online = await checkAPIHealth();
     if (online) {

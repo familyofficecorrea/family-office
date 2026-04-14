@@ -188,10 +188,61 @@
                         </button>
                     </form>
 
-                    <form id="add-imob-form" style="display: none;">
-                        <div style="padding: 40px 20px; text-align: center; color: var(--text-secondary); border: 1px dashed rgba(255,255,255,0.1); border-radius: 8px; background: rgba(255,255,255,0.02);">
-                            Aguardando opções de novos campos Imobiliários...
+                    <form id="add-imob-form" style="display: none; flex-direction: column; gap: 16px;">
+                        <div class="input-group">
+                            <label>Empreendimento / Cliente</label>
+                            <input type="text" id="vg-re-name" required placeholder="Ex: Lote 4 - João Silva">
                         </div>
+                        <div style="display: flex; gap: 16px;">
+                            <div class="input-group" style="flex: 1;">
+                                <label>VGV Total (R$)</label>
+                                <input type="number" id="vg-re-value" required step="0.01" min="0">
+                            </div>
+                            <div class="input-group" style="flex: 1;">
+                                <label>Entrada Recebida (R$)</label>
+                                <input type="number" id="vg-re-downpayment" required step="0.01" min="0">
+                            </div>
+                        </div>
+                        
+                        <h4 style="color: var(--text-secondary); margin-top: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Parcelas Mensais</h4>
+                        <div style="display: flex; gap: 16px;">
+                            <div class="input-group" style="flex: 1;">
+                                <label>Qtd Meses</label>
+                                <input type="number" id="vg-re-mensais-qtd" value="0" min="0">
+                            </div>
+                            <div class="input-group" style="flex: 1;">
+                                <label>Valor (R$)</label>
+                                <input type="number" id="vg-re-mensais-val" step="0.01" value="0" min="0">
+                            </div>
+                            <div class="input-group" style="flex: 1;">
+                                <label>1º Vencimento</label>
+                                <input type="date" id="vg-re-mensais-inicio">
+                            </div>
+                        </div>
+
+                        <h4 style="color: var(--text-secondary); margin-top: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Balões Anuais/Semestrais</h4>
+                        <div style="display: flex; gap: 16px;">
+                            <div class="input-group" style="flex: 1;">
+                                <label>Qtd Balões</label>
+                                <input type="number" id="vg-re-balao-qtd" value="0" min="0">
+                            </div>
+                            <div class="input-group" style="flex: 1;">
+                                <label>Valor (R$)</label>
+                                <input type="number" id="vg-re-balao-val" step="0.01" value="0" min="0">
+                            </div>
+                            <div class="input-group" style="flex: 1;">
+                                <label>1º Vencimento</label>
+                                <input type="date" id="vg-re-balao-inicio">
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label>Meses entre balões</label>
+                            <input type="number" id="vg-re-balao-freq" value="12" min="1" placeholder="Ex: 12 (Anual)">
+                        </div>
+
+                        <button type="submit" class="btn-primary" style="margin-top: 8px;">
+                            <i class="fa-solid fa-plus"></i> Adicionar ao Real Estate
+                        </button>
                     </form>
 
                     <div class="recent-assets">
