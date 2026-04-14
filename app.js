@@ -1473,7 +1473,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('add-imob-form').style.display = 'none';
 
             const targetFormId = targetTab.getAttribute('data-target');
-            document.getElementById(targetFormId).style.display = 'block';
+            if (targetFormId === 'add-imob-form') {
+                document.getElementById(targetFormId).style.display = 'flex';
+            } else {
+                document.getElementById(targetFormId).style.display = 'block';
+            }
         });
     });
 
