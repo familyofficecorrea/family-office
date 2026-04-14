@@ -1453,32 +1453,4 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ─── Live Reload: detecta mudanças no código ─────────────────────────
     setInterval(pollForCodeChanges, 3000);  // Código: checa a cada 3 segundos
 
-    // ─── Tabs Adicionar Ativo (Visão Geral) ──────────────────────────────
-    const typeTabs = document.querySelectorAll('.type-tab');
-    typeTabs.forEach(tab => {
-        tab.addEventListener('click', (e) => {
-            typeTabs.forEach(t => {
-                t.classList.remove('active');
-                t.style.background = 'transparent';
-                t.style.borderColor = 'transparent';
-                t.style.color = 'var(--text-secondary)';
-            });
-            const targetTab = e.target;
-            targetTab.classList.add('active');
-            targetTab.style.background = 'var(--bg-primary)';
-            targetTab.style.borderColor = 'rgba(255,255,255,0.1)';
-            targetTab.style.color = '#fff';
-
-            document.getElementById('add-asset-form').style.display = 'none';
-            document.getElementById('add-imob-form').style.display = 'none';
-
-            const targetFormId = targetTab.getAttribute('data-target');
-            if (targetFormId === 'add-imob-form') {
-                document.getElementById(targetFormId).style.display = 'flex';
-            } else {
-                document.getElementById(targetFormId).style.display = 'block';
-            }
-        });
-    });
-
 });

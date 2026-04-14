@@ -119,8 +119,8 @@
                     </div>
                     
                     <div class="asset-type-tabs" style="display: flex; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 8px;">
-                        <button type="button" class="type-tab active" data-target="add-asset-form" style="flex:1; background: var(--bg-primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px; color: #fff; cursor: pointer; transition: 0.2s; font-weight: 500;">Mercado Financeiro</button>
-                        <button type="button" class="type-tab" data-target="add-imob-form" style="flex:1; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 8px; color: var(--text-secondary); cursor: pointer; transition: 0.2s; font-weight: 500;">Imobiliário</button>
+                        <button type="button" class="type-tab active" onclick="switchForm('add-asset-form', this)" style="flex:1; background: var(--bg-primary); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; padding: 8px; color: #fff; cursor: pointer; transition: 0.2s; font-weight: 500;">Mercado Financeiro</button>
+                        <button type="button" class="type-tab" onclick="switchForm('add-imob-form', this)" style="flex:1; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 8px; color: var(--text-secondary); cursor: pointer; transition: 0.2s; font-weight: 500;">Imobiliário</button>
                     </div>
 
                     <form id="add-asset-form">
@@ -431,7 +431,31 @@
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Tooltip Interativo das Abas -->
+    <script>
+        window.switchForm = function(formId, btn) {
+            document.querySelectorAll('.type-tab').forEach(t => {
+                t.classList.remove('active');
+                t.style.background = 'transparent';
+                t.style.borderColor = 'transparent';
+                t.style.color = 'var(--text-secondary)';
+            });
+            btn.classList.add('active');
+            btn.style.background = 'var(--bg-primary)';
+            btn.style.borderColor = 'rgba(255,255,255,0.1)';
+            btn.style.color = '#fff';
+
+            document.getElementById('add-asset-form').style.display = 'none';
+            document.getElementById('add-imob-form').style.display = 'none';
+            
+            if (formId === 'add-imob-form') {
+                document.getElementById(formId).style.display = 'flex';
+            } else {
+                document.getElementById(formId).style.display = 'block';
+            }
+        };
+    </script>
     <!-- Custom Script -->
-    <script src="app.js?v=2.1"></script>
+    <script src="app.js?v=2.2"></script>
 </body>
 </html>
