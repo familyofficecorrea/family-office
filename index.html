@@ -124,6 +124,19 @@
                     </div>
 
                     <form id="add-asset-form">
+                        <!-- Tipo de Operação -->
+                        <div class="input-group" style="margin-bottom: 12px;">
+                            <label>Tipo de Operação</label>
+                            <div style="display: flex; gap: 10px;">
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: #fff; font-weight: normal; margin: 0;">
+                                    <input type="radio" name="asset-op-type" value="aporte" checked style="width: 16px; height: 16px;"> Aporte (Compra)
+                                </label>
+                                <label style="display: flex; align-items: center; gap: 6px; cursor: pointer; color: var(--text-secondary); font-weight: normal; margin: 0;">
+                                    <input type="radio" name="asset-op-type" value="saque" style="width: 16px; height: 16px;"> Saque (Venda)
+                                </label>
+                            </div>
+                        </div>
+
                         <!-- Ticker com Autocomplete -->
                         <div class="input-group autocomplete-wrapper">
                             <label for="asset-ticker">Ticker do Ativo</label>
@@ -179,12 +192,20 @@
                         
                         <!-- Data do Aporte -->
                         <div class="input-group">
-                            <label for="asset-date">Data do Aporte</label>
+                            <label for="asset-date">Data da Operação</label>
                             <input type="date" id="asset-date" required>
                         </div>
                         
+                        <!-- Origem Real Estate -->
+                        <div class="input-group checkbox-group" id="re-origin-container" style="margin-top: 10px; margin-bottom: 16px;">
+                            <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: normal; color: var(--text-secondary); font-size: 13px;">
+                                <input type="checkbox" id="asset-re-origin" style="width: 16px; height: 16px; accent-color: var(--accent-green);">
+                                Capital oriundo de recebimento de Real Estate (não somar ao Patrimônio)
+                            </label>
+                        </div>
+                        
                         <button type="submit" class="btn-primary" id="btn-add-asset">
-                            <i class="fa-solid fa-plus"></i> Adicionar à Carteira
+                            <i class="fa-solid fa-plus"></i> Registrar Operação
                         </button>
                     </form>
 

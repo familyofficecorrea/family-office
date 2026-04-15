@@ -641,6 +641,24 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ─── Autocomplete Logic ──────────────────────────────────────────────
     const tickerInput = document.getElementById('asset-ticker');
+    
+    // ─── Op Type Logic ─────────────────────────────────────────────
+    const opRadios = document.querySelectorAll('input[name="asset-op-type"]');
+    const reOriginContainer = document.getElementById('re-origin-container');
+    const btnAddAsset = document.getElementById('btn-add-asset');
+    opRadios.forEach(r => {
+        r.addEventListener('change', (e) => {
+            if (e.target.value === 'saque') {
+                reOriginContainer.style.display = 'none';
+                btnAddAsset.innerHTML = '<i class="fa-solid fa-right-from-bracket"></i> Registrar Saque';
+                btnAddAsset.style.backgroundColor = '#FF3D57';
+            } else {
+                reOriginContainer.style.display = 'flex';
+                btnAddAsset.innerHTML = '<i class="fa-solid fa-plus"></i> Registrar Aporte';
+                btnAddAsset.style.backgroundColor = 'var(--accent-green)';
+            }
+        });
+    });
     const dropdown = document.getElementById('autocomplete-dropdown');
     const spinner = document.getElementById('ticker-spinner');
     const selectedInfo = document.getElementById('selected-ticker-info');
@@ -808,6 +826,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const categoryInput = document.getElementById('asset-category');
         const dateInput = document.getElementById('asset-date');
         
+        const opType = document.querySelector('input[name="asset-op-type"]:checked').value;
+        const isReOrigin = document.getElementById('asset-re-origin')?.checked;
+        
         if (!ticker || !quantity || !execPrice) return;
         
         const totalValue = quantity * execPrice;
@@ -828,37 +849,82 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         const existingIndex = assets.findIndex(a => a.ticker && a.ticker.toUpperCase() === ticker);
         
-        if (existingIndex !== -1) {
-            // Merge: preço médio ponderado
+        if (opType === 'saque') {
+            if (existingIndex === -1) {
+                alert('Ativo não encontrado para efetuar o saque.');
+                return;
+            }
             const existing = assets[existingIndex];
-            const totalQty = existing.quantity + quantity;
-            const newAvgPrice = ((existing.quantity * existing.avgPrice) + (quantity * execPrice)) / totalQty;
+            if (existing.quantity < quantity) {
+                alert('Quantidade insuficiente no portfólio para esse saque.');
+                return;
+            }
+            const proportion = quantity / existing.quantity;
             
-            existing.quantity = totalQty;
-            existing.avgPrice = newAvgPrice;
-            existing.value = totalQty * newAvgPrice;
-            existing.currentPrice = currentPrice;
-            existing.simulatedCurrent = totalQty * currentPrice;
-            existing.price1MonthAgo = price1MonthAgo;
+            // Lógica de "Preço Médio Gerencial / Breakeven"
+            // Abate o valor total da venda do custo original da posição.
+            // Se vender com lucro e tirar todo o risco, o PM pode zerar ou ficar negativo.
+            // Se vender com prejuízo, o PM das cotas restantes sobe, pois precisam recuperar o prejuízo para a operação empatar.
+            const oldTotalCost = existing.quantity * existing.avgPrice;
+            const saleValue = quantity * execPrice;
+            const newTotalCost = oldTotalCost - saleValue;
+
+            existing.quantity -= quantity;
             
-            const newDateObj = new Date(dateInput.value);
-            if (newDateObj > new Date(existing.lastDate)) existing.lastDate = dateInput.value;
-            if (newDateObj < new Date(existing.firstDate)) existing.firstDate = dateInput.value;
+            if (existing.quantity > 0.000001) {
+                existing.avgPrice = newTotalCost / existing.quantity;
+            } else {
+                existing.avgPrice = 0;
+            }
+            
+            existing.value = newTotalCost; 
+            existing.simulatedCurrent = existing.quantity * currentPrice;
+            
+            if (existing.reInvested) {
+                // Remove proportionality of RE invested capital
+                existing.reInvested = existing.reInvested * (1 - proportion);
+            }
+            
+            if (existing.quantity <= 0.000001) {
+                assets.splice(existingIndex, 1);
+            }
         } else {
-            assets.push({
-                id: Date.now(),
-                ticker: ticker,
-                name: assetName,
-                quantity: quantity,
-                avgPrice: execPrice,
-                value: totalValue,
-                currentPrice: currentPrice,
-                price1MonthAgo: price1MonthAgo,
-                simulatedCurrent: quantity * currentPrice,
-                category: categoryInput.value,
-                firstDate: dateInput.value,
-                lastDate: dateInput.value
-            });
+            if (existingIndex !== -1) {
+                // Merge: preço médio ponderado
+                const existing = assets[existingIndex];
+                const totalQty = existing.quantity + quantity;
+                const newAvgPrice = ((existing.quantity * existing.avgPrice) + (quantity * execPrice)) / totalQty;
+                
+                existing.quantity = totalQty;
+                existing.avgPrice = newAvgPrice;
+                existing.value = totalQty * newAvgPrice;
+                existing.currentPrice = currentPrice;
+                existing.simulatedCurrent = totalQty * currentPrice;
+                existing.price1MonthAgo = price1MonthAgo;
+                if (isReOrigin) {
+                    existing.reInvested = (existing.reInvested || 0) + totalValue;
+                }
+                
+                const newDateObj = new Date(dateInput.value);
+                if (newDateObj > new Date(existing.lastDate)) existing.lastDate = dateInput.value;
+                if (newDateObj < new Date(existing.firstDate)) existing.firstDate = dateInput.value;
+            } else {
+                assets.push({
+                    id: Date.now(),
+                    ticker: ticker,
+                    name: assetName,
+                    quantity: quantity,
+                    avgPrice: execPrice,
+                    value: totalValue,
+                    currentPrice: currentPrice,
+                    price1MonthAgo: price1MonthAgo,
+                    simulatedCurrent: quantity * currentPrice,
+                    category: categoryInput.value,
+                    firstDate: dateInput.value,
+                    lastDate: dateInput.value,
+                    reInvested: isReOrigin ? totalValue : 0
+                });
+            }
         }
 
         saveAssets();
@@ -879,9 +945,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         // Success feedback
         const btn = form.querySelector('.btn-primary');
         const originalText = btn.innerHTML;
-        btn.innerHTML = '<i class="fa-solid fa-check"></i> Adicionado!';
-        btn.style.backgroundColor = 'var(--accent-green)';
-        setTimeout(() => { btn.innerHTML = originalText; btn.style.backgroundColor = ''; }, 2000);
+        const originalBg = btn.style.backgroundColor;
+        
+        if (opType === 'saque') {
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Saque Registrado!';
+            btn.style.backgroundColor = '#FF3D57';
+        } else {
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> Aporte Registrado!';
+            btn.style.backgroundColor = 'var(--accent-green)';
+        }
+        
+        setTimeout(() => { btn.innerHTML = originalText; btn.style.backgroundColor = originalBg; }, 2000);
     });
 
     // ─── Delete Asset ────────────────────────────────────────────────────
@@ -903,8 +977,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ─── Update Total Equity ─────────────────────────────────────────────
     window.updateTotalEquity = () => {
         const totalFinanceiro = assets.reduce((sum, a) => sum + (a.simulatedCurrent || a.value), 0);
+        // Capital do Financial que veio do RE (para evitar soma dupla)
+        const totalAlocadoDeRE = assets.reduce((sum, a) => sum + (a.reInvested || 0), 0);
         const totalReRecebido = real_estate.reduce((sum, re) => sum + (re.downpayment || 0), 0);
-        const total = totalFinanceiro + totalReRecebido;
+        
+        // Patrimônio Total: Dinheiro nos ativos + Dinheiro recebido de RE que AINDA NÃO FOI ALOCADO
+        const total = totalFinanceiro + (totalReRecebido - totalAlocadoDeRE);
         document.getElementById('total-equity').innerHTML = formatCurrency(total);
     };
 
