@@ -5,6 +5,12 @@
 
 const API_BASE = '/api';
 
+// Theme Manager
+let currentTheme = localStorage.getItem('theme') || 'dark';
+if (currentTheme === 'light') {
+    document.documentElement.setAttribute('data-theme', 'light');
+}
+
 let labels = [];
 let cdiData = [];
 let portfolioData = [];
@@ -321,6 +327,28 @@ function isRealTicker(ticker) {
 // ─── Initialization ──────────────────────────────────────────────────────────
 document.addEventListener('DOMContentLoaded', async () => {
 
+    // Theme setup
+    const themeBtn = document.getElementById('theme-toggle');
+    const themeIcon = themeBtn.querySelector('i');
+    if (currentTheme === 'light') {
+        themeIcon.className = 'fa-solid fa-moon'; // No tema claro mostra a lua para trocar pro escuro
+    } else {
+        themeIcon.className = 'fa-solid fa-sun';
+    }
+
+    themeBtn.addEventListener('click', () => {
+        currentTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        if (currentTheme === 'light') {
+            document.documentElement.setAttribute('data-theme', 'light');
+            themeIcon.className = 'fa-solid fa-moon';
+        } else {
+            document.documentElement.removeAttribute('data-theme');
+            themeIcon.className = 'fa-solid fa-sun';
+        }
+        localStorage.setItem('theme', currentTheme);
+        if (window.updateChartTheme) window.updateChartTheme();
+    });
+
     // Tabs Logic
     const menuItems = document.querySelectorAll('.menu-item[data-tab]');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -403,7 +431,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     gradientCDI.addColorStop(0, 'rgba(41, 98, 255, 0.2)');
     gradientCDI.addColorStop(1, 'rgba(41, 98, 255, 0.0)');
 
-    const growthChart = new Chart(ctx, {
+    window.growthChart = new Chart(ctx, {
         type: 'line',
         data: {
             labels: labels,
@@ -525,11 +553,11 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (sIdx >= eIdx) { eIdx = Math.min(labels.length - 1, sIdx + 1); }
         if (sIdx >= labels.length) { sIdx = labels.length - 2; eIdx = labels.length - 1; }
         
-        growthChart.data.labels = labels.slice(sIdx, eIdx + 1);
-        growthChart.data.datasets[0].data = portfolioData.slice(sIdx, eIdx + 1);
-        growthChart.data.datasets[1].data = cdiData.slice(sIdx, eIdx + 1);
-        growthChart.data.principalSliced = principalData.slice(sIdx, eIdx + 1);
-        growthChart.update();
+        window.growthChart.data.labels = labels.slice(sIdx, eIdx + 1);
+        window.growthChart.data.datasets[0].data = portfolioData.slice(sIdx, eIdx + 1);
+        window.growthChart.data.datasets[1].data = cdiData.slice(sIdx, eIdx + 1);
+        window.growthChart.data.principalSliced = principalData.slice(sIdx, eIdx + 1);
+        window.growthChart.update();
         if (typeof validateActiveButton === 'function') validateActiveButton();
     };
 
@@ -538,6 +566,44 @@ document.addEventListener('DOMContentLoaded', async () => {
     
     // Quick filters
     const quickFilters = document.querySelectorAll('#quick-filters .btn-filter');
+    
+    window.updateChartTheme = function() {
+        const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+        const color = isLight ? '#8B909A' : '#9BA1A6';
+        const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
+        const tooltipBg = isLight ? 'rgba(255, 255, 255, 0.95)' : 'rgba(19, 23, 34, 0.9)';
+        const tooltipBorder = isLight ? 'rgba(0, 0, 0, 0.1)' : 'rgba(255, 255, 255, 0.1)';
+        const tooltipText = isLight ? '#2D3136' : '#FFFFFF';
+
+        if (window.growthChart) {
+            window.growthChart.options.plugins.legend.labels.color = color;
+            window.growthChart.options.plugins.tooltip.backgroundColor = tooltipBg;
+            window.growthChart.options.plugins.tooltip.titleColor = tooltipText;
+            window.growthChart.options.plugins.tooltip.bodyColor = tooltipText;
+            window.growthChart.options.plugins.tooltip.borderColor = tooltipBorder;
+            window.growthChart.options.scales.x.ticks.color = color;
+            window.growthChart.options.scales.y.ticks.color = color;
+            window.growthChart.options.scales.y.grid.color = gridColor;
+            window.growthChart.update();
+        }
+
+        if (allocationChart) {
+            allocationChart.options.plugins.legend.labels.color = color;
+            allocationChart.options.plugins.tooltip.backgroundColor = tooltipBg;
+            allocationChart.options.plugins.tooltip.titleColor = tooltipText;
+            allocationChart.options.plugins.tooltip.bodyColor = tooltipText;
+            allocationChart.options.plugins.tooltip.borderColor = tooltipBorder;
+            
+            if (allocationChart.data && allocationChart.data.datasets.length > 0) {
+                // A cor de borda do gráfico donut (para o espaço entre eles virar background)
+                allocationChart.data.datasets[0].borderColor = isLight ? '#FFFFFF' : '#1C212E';
+            }
+            allocationChart.update();
+        }
+    };
+    
+    // Update theme as logo has mounted
+    window.updateChartTheme();
     
     const formatDateForInput = (d) => {
         const yyyy = d.getFullYear();

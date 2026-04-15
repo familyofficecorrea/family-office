@@ -21,6 +21,27 @@
     --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
+/* Light Theme overrides (Pele Clara / Cinza Crômio / Bege) */
+[data-theme="light"] {
+    --bg-main: #FDF9F3;          /* Pele Clara / Bege de fundo ultra suave */
+    --bg-secondary: #FFFFFF;     /* Branco puro para os painéis */
+    --bg-tertiary: #F2EFE8;      /* Cinza crômio misturado com bege suave para hovers */
+    --bg-primary: #FCF7F0;
+    
+    --text-primary: #2D3136;     /* Cinza chumbo escuro para ótimo contraste sem ser preto sólido */
+    --text-secondary: #8B909A;   /* Cinza crômio para textos secundários */
+    
+    --accent-gold: #BC8D25;      /* Gold ajustado para ter mais leitura no fundo claro */
+    --accent-green: #00A344;     /* Verde ligeiramente mais denso */
+    --accent-blue: #1A54EA;      /* Azul principal */
+    --accent-blue-glow: rgba(26, 84, 234, 0.1);
+    --accent-red: #E22B43;
+    
+    --border-color: rgba(0, 0, 0, 0.08);
+    --glass-bg: rgba(255, 255, 255, 0.85);
+    --glass-border: rgba(0, 0, 0, 0.06);
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -192,11 +213,32 @@ body {
     align-items: center;
     gap: 12px;
     background-color: var(--bg-secondary);
-    padding: 8px 16px;
+    padding: 8px 16px 8px 8px;
     border-radius: 30px;
     border: 1px solid var(--border-color);
     cursor: pointer;
     transition: var(--transition);
+}
+
+.theme-toggle-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    cursor: pointer;
+    transition: var(--transition);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 16px;
+}
+
+.theme-toggle-btn:hover {
+    background-color: var(--bg-tertiary);
+    color: var(--accent-gold);
+    transform: rotate(15deg);
 }
 
 .user-profile:hover {
