@@ -42,6 +42,38 @@
     --glass-border: rgba(0, 0, 0, 0.06);
 }
 
+/* Light theme: premium card gradient fix */
+[data-theme="light"] .premium-card {
+    background: linear-gradient(135deg, #FFFDF7 0%, #FFF8EC 100%);
+}
+
+[data-theme="light"] .premium-card::before {
+    background: linear-gradient(135deg, var(--accent-gold), transparent);
+}
+
+/* Light theme: chart glass panel translucent */
+[data-theme="light"] .chart-section.glass-panel {
+    background: rgba(255, 255, 255, 0.65);
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+}
+
+/* Light theme: asset type tabs */
+[data-theme="light"] .asset-type-tabs {
+    background: rgba(0, 0, 0, 0.06) !important;
+}
+
+[data-theme="light"] .asset-type-tabs .type-tab.active {
+    background: var(--bg-secondary) !important;
+    color: var(--text-primary) !important;
+    border-color: rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+[data-theme="light"] .asset-type-tabs .type-tab:not(.active) {
+    color: var(--text-secondary) !important;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -62,7 +94,7 @@ body {
     -webkit-backdrop-filter: blur(12px);
     border: 1px solid var(--glass-border);
     border-radius: 16px;
-    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
 }
 
 .dashboard-container {
