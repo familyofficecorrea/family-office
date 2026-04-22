@@ -1340,14 +1340,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit-unit-label').value = unit.label;
         document.getElementById('edit-unit-status').value = unit.status;
         document.getElementById('edit-unit-rent').value = unit.rentValue || '';
+        document.getElementById('edit-unit-rent-start').value = unit.rentStartDate || '';
         document.getElementById('edit-unit-sale').value = unit.saleValue || '';
+        document.getElementById('edit-unit-sale-date').value = unit.saleDate || '';
         document.getElementById('edit-unit-notes').value = unit.notes || '';
         document.getElementById('edit-unit-title').textContent = `Editar ${unit.label}`;
 
         // Toggle groups
         const status = unit.status;
         document.getElementById('edit-unit-rent-group').style.display = (status === 'alugado') ? 'block' : 'none';
+        document.getElementById('edit-unit-rent-start-group').style.display = (status === 'alugado') ? 'block' : 'none';
         document.getElementById('edit-unit-sale-group').style.display = (status === 'vendido') ? 'block' : 'none';
+        document.getElementById('edit-unit-sale-date-group').style.display = (status === 'vendido') ? 'block' : 'none';
 
         document.getElementById('modal-edit-unit').classList.add('visible');
     };
@@ -1543,6 +1547,188 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (revEl) revEl.innerText = formatCurrency(totalRent);
     }
 
+    // ─── Rental Income Chart (Historical + Projection) ───────────────────────
+    let rentalChartObj = null;
+
+    function renderRentalIncomeChart() {
+        const ctx = document.getElementById('rentalIncomeChart');
+        if (!ctx) return;
+
+        // Gather all rented units with a start date
+        const rentedUnits = [];
+        real_estate.forEach(b => {
+            (b.units || []).forEach(u => {
+                if (u.status === 'alugado' && u.rentStartDate && u.rentValue > 0) {
+                    rentedUnits.push({ rent: u.rentValue, start: u.rentStartDate });
+                }
+            });
+        });
+
+        // Current total monthly rent (including units without start date)
+        let currentMonthlyRent = 0;
+        real_estate.forEach(b => {
+            (b.units || []).forEach(u => {
+                if (u.status === 'alugado' && u.rentValue > 0) {
+                    currentMonthlyRent += u.rentValue;
+                }
+            });
+        });
+
+        // Determine timeline: 6 months back + current month + 12 months forward = 19 months
+        const today = new Date();
+        const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
+        const MONTHS_BACK = 6;
+        const MONTHS_FORWARD = 12;
+
+        const startDate = new Date(currentMonth);
+        startDate.setMonth(startDate.getMonth() - MONTHS_BACK);
+
+        const labels = [];
+        const historicalData = [];
+        const projectionData = [];
+        const totalMonths = MONTHS_BACK + 1 + MONTHS_FORWARD;
+
+        for (let i = 0; i < totalMonths; i++) {
+            const d = new Date(startDate);
+            d.setMonth(d.getMonth() + i);
+            const monthKey = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
+            labels.push(monthKey);
+
+            const isCurrentOrPast = d <= currentMonth;
+
+            if (isCurrentOrPast) {
+                // Historical: sum rent of units that were already active in this month
+                let monthTotal = 0;
+                rentedUnits.forEach(u => {
+                    const unitStart = new Date(u.start + 'T12:00:00Z');
+                    const unitStartMonth = new Date(unitStart.getFullYear(), unitStart.getMonth(), 1);
+                    if (d >= unitStartMonth) {
+                        monthTotal += u.rent;
+                    }
+                });
+                historicalData.push(monthTotal);
+                projectionData.push(null);
+            } else {
+                // Future: project with current total rent
+                historicalData.push(null);
+                projectionData.push(currentMonthlyRent);
+            }
+        }
+
+        // Bridge: connect historical to projection by adding current rent to projection at split point
+        const splitIndex = MONTHS_BACK; // index of current month
+        if (historicalData[splitIndex] !== null) {
+            projectionData[splitIndex] = historicalData[splitIndex];
+        }
+
+        // Accumulated data
+        let accum = 0;
+        const accumulatedData = [];
+        for (let i = 0; i < totalMonths; i++) {
+            const val = historicalData[i] !== null ? historicalData[i] : projectionData[i];
+            accum += (val || 0);
+            accumulatedData.push(accum);
+        }
+
+        const chartConfig = {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Receita Histórica',
+                        data: historicalData,
+                        backgroundColor: 'rgba(0, 200, 83, 0.6)',
+                        borderColor: '#00C853',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        order: 2
+                    },
+                    {
+                        label: 'Projeção Futura',
+                        data: projectionData,
+                        backgroundColor: 'rgba(41, 98, 255, 0.35)',
+                        borderColor: '#2962FF',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        borderDash: [4, 4],
+                        order: 2
+                    },
+                    {
+                        label: 'Acumulado',
+                        data: accumulatedData,
+                        type: 'line',
+                        borderColor: '#FFD54F',
+                        backgroundColor: 'rgba(255, 213, 79, 0.08)',
+                        borderWidth: 2,
+                        pointRadius: 0,
+                        pointHoverRadius: 4,
+                        tension: 0.3,
+                        fill: true,
+                        yAxisID: 'yAccum',
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: {
+                            color: 'rgba(255,255,255,0.7)',
+                            padding: 16,
+                            usePointStyle: true,
+                            pointStyleWidth: 10,
+                            font: { size: 11 }
+                        }
+                    },
+                    tooltip: {
+                        callbacks: {
+                            label: (c) => `${c.dataset.label}: ${formatCurrency(c.raw)}`
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumSignificantDigits: 3 }).format(val),
+                            color: 'rgba(255,255,255,0.5)'
+                        },
+                        grid: { color: 'rgba(255,255,255,0.05)' }
+                    },
+                    yAccum: {
+                        position: 'right',
+                        beginAtZero: true,
+                        ticks: {
+                            callback: (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumSignificantDigits: 3 }).format(val),
+                            color: 'rgba(255, 213, 79, 0.5)'
+                        },
+                        grid: { display: false }
+                    },
+                    x: {
+                        ticks: { color: 'rgba(255,255,255,0.5)', maxRotation: 45 },
+                        grid: { display: false }
+                    }
+                }
+            }
+        };
+
+        if (rentalChartObj) {
+            rentalChartObj.data = chartConfig.data;
+            rentalChartObj.options = chartConfig.options;
+            rentalChartObj.update();
+        } else {
+            rentalChartObj = new Chart(ctx.getContext('2d'), chartConfig);
+        }
+    }
+
     window.updateRealEstateUI = () => {
         const grid = document.getElementById('re-buildings-grid');
         if (!grid) return;
@@ -1559,6 +1745,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         updateRealEstateSummary();
+        renderRentalIncomeChart();
 
         // If detail panel is open, refresh it too
         if (_currentBuildingId) {
@@ -1667,12 +1854,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             unit.label = document.getElementById('edit-unit-label').value.trim();
             unit.status = document.getElementById('edit-unit-status').value;
             unit.rentValue = parseFloat(document.getElementById('edit-unit-rent').value) || 0;
+            unit.rentStartDate = document.getElementById('edit-unit-rent-start').value || '';
             unit.saleValue = parseFloat(document.getElementById('edit-unit-sale').value) || 0;
+            unit.saleDate = document.getElementById('edit-unit-sale-date').value || '';
             unit.notes = document.getElementById('edit-unit-notes').value.trim();
 
             saveRealEstate();
             renderBuildingDetail();
             updateRealEstateSummary();
+            renderRentalIncomeChart();
 
             document.getElementById('modal-edit-unit').classList.remove('visible');
         });
