@@ -1435,6 +1435,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <span class="building-revenue-label">Renda Mensal</span>
                         <span class="building-revenue-value">${formatCurrency(info.totalRent)}</span>
                     </div>
+                    ${info.totalSales > 0 ? `
+                    <div class="building-revenue">
+                        <span class="building-revenue-label">Receita Vendas</span>
+                        <span class="building-revenue-value" style="color: var(--accent-red);">${formatCurrency(info.totalSales)}</span>
+                    </div>
+                    ` : ''}
                     <div class="building-card-arrow">
                         <i class="fa-solid fa-chevron-right"></i>
                     </div>
