@@ -1024,7 +1024,454 @@ body {
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════ */
-/*  KANBAN BOARD (IMOBILIÁRIO)                                               */
+/*  REAL ESTATE — PROPERTY MANAGEMENT                                        */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+/* --- Buildings Grid --- */
+.buildings-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(380px, 1fr));
+    gap: 24px;
+    animation: fadeInUp 0.5s ease;
+}
+
+/* --- Building Card --- */
+.building-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--glass-border);
+    border-radius: 16px;
+    padding: 28px;
+    cursor: pointer;
+    transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.building-card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--accent-blue), var(--accent-green));
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.building-card:hover {
+    transform: translateY(-6px);
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.3), 0 0 0 1px rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.12);
+}
+
+.building-card:hover::before {
+    opacity: 1;
+}
+
+.building-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 20px;
+}
+
+.building-card-title {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.building-card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, rgba(41, 98, 255, 0.15), rgba(0, 200, 83, 0.1));
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    font-size: 22px;
+    color: var(--accent-blue);
+}
+
+.building-card-name {
+    font-size: 18px;
+    font-weight: 700;
+    color: var(--text-primary);
+    letter-spacing: -0.3px;
+}
+
+.building-card-address {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 2px;
+}
+
+.building-card-units-badge {
+    background: rgba(255, 255, 255, 0.06);
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    white-space: nowrap;
+}
+
+/* --- Occupancy Bar --- */
+.occupancy-bar-container {
+    margin-bottom: 20px;
+}
+
+.occupancy-bar-label {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 8px;
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.occupancy-bar-pct {
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.occupancy-bar {
+    width: 100%;
+    height: 10px;
+    background: rgba(255, 255, 255, 0.06);
+    border-radius: 10px;
+    overflow: hidden;
+    position: relative;
+}
+
+.occupancy-bar-fill {
+    height: 100%;
+    border-radius: 10px;
+    transition: width 0.8s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.occupancy-bar-fill::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.15) 50%, transparent 100%);
+    animation: shimmerBar 2s ease-in-out infinite;
+}
+
+@keyframes shimmerBar {
+    0% { transform: translateX(-100%); }
+    100% { transform: translateX(200%); }
+}
+
+/* Occupancy Levels */
+.occupancy-low { background: linear-gradient(90deg, #FF3D57, #FF6B6B); }
+.occupancy-medium { background: linear-gradient(90deg, #FFA000, #FFD54F); }
+.occupancy-high { background: linear-gradient(90deg, #00C853, #69F0AE); }
+.occupancy-full { background: linear-gradient(90deg, var(--accent-blue), #448AFF); }
+
+/* --- Building Stats --- */
+.building-card-stats {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.building-stat {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.building-stat-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+    font-weight: 500;
+}
+
+.building-stat-value {
+    font-size: 15px;
+    font-weight: 700;
+}
+
+.building-stat-value.green { color: var(--accent-green); }
+.building-stat-value.red { color: var(--accent-red); }
+.building-stat-value.gold { color: var(--accent-gold); }
+
+/* --- Building Revenue Footer --- */
+.building-card-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 16px;
+    border-top: 1px solid var(--border-color);
+}
+
+.building-revenue {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.building-revenue-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.building-revenue-value {
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent-green);
+}
+
+.building-card-arrow {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: rgba(41, 98, 255, 0.1);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    color: var(--accent-blue);
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.building-card:hover .building-card-arrow {
+    background: var(--accent-blue);
+    color: #fff;
+    transform: translateX(4px);
+}
+
+/* --- Building Card Delete --- */
+.building-card-delete {
+    position: absolute;
+    top: 12px;
+    right: 12px;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    opacity: 0;
+    transition: all 0.2s ease;
+    font-size: 13px;
+    padding: 6px;
+    border-radius: 6px;
+    z-index: 2;
+}
+
+.building-card:hover .building-card-delete {
+    opacity: 0.6;
+}
+
+.building-card-delete:hover {
+    opacity: 1 !important;
+    color: var(--accent-red);
+    background: rgba(255, 61, 87, 0.1);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*  BUILDING DETAIL PANEL                                                    */
+/* ═══════════════════════════════════════════════════════════════════════════ */
+
+.building-detail-panel {
+    animation: fadeIn 0.35s ease;
+}
+
+.detail-panel-header {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.detail-panel-header h2 {
+    flex: 1;
+    font-size: 22px;
+    font-weight: 700;
+    letter-spacing: -0.3px;
+}
+
+.btn-back {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--border-color);
+    color: var(--text-secondary);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-back:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+.detail-panel-filters {
+    display: flex;
+    gap: 4px;
+    background: rgba(255, 255, 255, 0.04);
+    padding: 4px;
+    border-radius: 8px;
+    margin-bottom: 24px;
+}
+
+/* --- Units Grid --- */
+.units-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 16px;
+    animation: fadeInUp 0.4s ease;
+}
+
+.unit-card {
+    background: var(--bg-secondary);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 18px;
+    cursor: pointer;
+    transition: all 0.25s ease;
+    position: relative;
+    border-left: 4px solid transparent;
+}
+
+.unit-card:hover {
+    transform: translateY(-3px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.unit-card.status-alugado {
+    border-left-color: var(--accent-green);
+}
+
+.unit-card.status-vendido {
+    border-left-color: var(--accent-red);
+}
+
+.unit-card.status-disponivel {
+    border-left-color: var(--accent-gold);
+}
+
+.unit-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+.unit-card-label {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.unit-status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 3px 10px;
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.2px;
+}
+
+.unit-status-badge.alugado {
+    background: rgba(0, 200, 83, 0.12);
+    color: var(--accent-green);
+}
+
+.unit-status-badge.vendido {
+    background: rgba(255, 61, 87, 0.12);
+    color: var(--accent-red);
+}
+
+.unit-status-badge.disponivel {
+    background: rgba(212, 175, 55, 0.12);
+    color: var(--accent-gold);
+}
+
+.unit-card-value {
+    font-size: 16px;
+    font-weight: 700;
+    margin-bottom: 4px;
+}
+
+.unit-card-value.rent { color: var(--accent-green); }
+.unit-card-value.sale { color: var(--accent-red); }
+.unit-card-value.empty { color: var(--text-secondary); font-size: 13px; font-weight: 400; }
+
+.unit-card-notes {
+    font-size: 12px;
+    color: var(--text-secondary);
+    margin-top: 6px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.unit-card-delete-btn {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    opacity: 0;
+    background: none;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 4px;
+    transition: all 0.2s;
+    font-size: 12px;
+}
+
+.unit-card:hover .unit-card-delete-btn {
+    opacity: 1;
+}
+
+.unit-card-delete-btn:hover {
+    color: var(--accent-red);
+    background: rgba(255, 61, 87, 0.1);
+}
+
+/* --- Modal Overlay (reused) --- */
+.modal-overlay {
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999;
+    animation: fadeIn 0.2s ease;
+}
+
+.modal-overlay.visible {
+    display: flex;
+}
+
+.modal-content {
+    padding: 28px;
+    animation: fadeInUp 0.3s ease;
+    max-height: 90vh;
+    overflow-y: auto;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════ */
+/*  KANBAN BOARD (IMOBILIÁRIO) — LEGACY                                      */
 /* ═══════════════════════════════════════════════════════════════════════════ */
 .kanban-board {
     display: flex;

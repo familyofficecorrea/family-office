@@ -1043,13 +1043,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     // ─── Update Total Equity ─────────────────────────────────────────────
     window.updateTotalEquity = () => {
         const totalFinanceiro = assets.reduce((sum, a) => sum + (a.simulatedCurrent || a.value), 0);
-        // Capital do Financial que veio do RE (para evitar soma dupla)
-        const totalAlocadoDeRE = assets.reduce((sum, a) => sum + (a.reInvested || 0), 0);
-        const totalReRecebido = real_estate.reduce((sum, re) => sum + (re.downpayment || 0), 0);
-        
-        // Patrimônio Total: Dinheiro nos ativos + Dinheiro recebido de RE que AINDA NÃO FOI ALOCADO
-        const total = totalFinanceiro + (totalReRecebido - totalAlocadoDeRE);
-        document.getElementById('total-equity').innerHTML = formatCurrency(total);
+        document.getElementById('total-equity').innerHTML = formatCurrency(totalFinanceiro);
     };
 
     // ─── UI Updates ──────────────────────────────────────────────────────
@@ -1279,290 +1273,434 @@ document.addEventListener('DOMContentLoaded', async () => {
         refreshBtn.addEventListener('click', refreshAllQuotes);
     }
 
-    // ─── Real Estate Cashflow Logic ───────────────────────────────────────────
-    let cashflowChartObj = null;
+    // ─── Real Estate Property Management ────────────────────────────────────────
+    let _currentBuildingId = null; // Currently opened building detail
+    let _currentUnitFilter = 'all';
 
-    window.deleteRealEstate = (id) => {
-        if(confirm("Deseja realmente excluir este contrato imobiliário?")) {
-            real_estate = real_estate.filter(r => r.id != id);
+    window.deleteBuilding = (id, e) => {
+        if (e) { e.stopPropagation(); e.preventDefault(); }
+        if (confirm("Deseja realmente excluir este imóvel e todas as suas unidades?")) {
+            real_estate = real_estate.filter(r => r.id !== id);
             saveRealEstate();
-            if (typeof updateRealEstateUI === 'function') updateRealEstateUI();
-        }
-    };
-
-    window.markInstallmentPaid = (reId, instIndex) => {
-        const re = real_estate.find(r => r.id == reId);
-        if (re && re.installments[instIndex]) {
-            re.installments[instIndex].paid = !re.installments[instIndex].paid;
-            if (re.installments[instIndex].paid) {
-                re.downpayment += re.installments[instIndex].value;
-            } else {
-                re.downpayment -= re.installments[instIndex].value;
+            if (_currentBuildingId === id) {
+                closeBuildingDetail();
             }
-            saveRealEstate();
             updateRealEstateUI();
         }
     };
 
-    window.addPayment = (id) => {
-        let re = real_estate.find(r => r.id === id);
-        if(!re) return;
-        let p = prompt(`Qual o valor recebido para '${re.name}'?`);
-        if(p) {
-            let val = parseFloat(p.replace(',', '.'));
-            if(!isNaN(val) && val > 0) {
-                re.downpayment += val;
-                
-                // Amortiza das parcelas abertas mais antigas
-                if(re.installments) {
-                    let toDeduct = val;
-                    re.installments.sort((a,b) => new Date(a.date) - new Date(b.date));
-                    for(let inst of re.installments) {
-                        if(!inst.paid && toDeduct > 0) {
-                            if(inst.value <= toDeduct) {
-                                toDeduct -= inst.value;
-                                inst.paid = true;
-                            } else {
-                                inst.value -= toDeduct;
-                                toDeduct = 0;
-                            }
-                        }
-                    }
-                }
-                saveRealEstate();
-                if (typeof updateRealEstateUI === 'function') updateRealEstateUI();
-            }
-        }
-    };
+    window.openBuildingDetail = (buildingId) => {
+        _currentBuildingId = buildingId;
+        _currentUnitFilter = 'all';
 
-    window.updateRealEstateUI = () => {
-        let tbody = '';
-        let totalRevenue30d = 0;
-        
-        // Setup dates for projection (next 12 months)
-        const today = new Date();
-        const next30Days = new Date(today.getTime() + (30 * 24 * 60 * 60 * 1000));
-        
-        const projectionMap = {};
-        for(let i=0; i<12; i++) {
-            let d = new Date(today.getFullYear(), today.getMonth() + i, 1);
-            let key = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-            projectionMap[key] = { label: `${String(d.getMonth()+1).padStart(2,'0')}/${d.getFullYear()}`, total: 0 };
-        }
+        // Hide main grid, show detail panel
+        document.getElementById('re-buildings-grid').style.display = 'none';
+        document.querySelector('#imobiliaria > .section-header').style.display = 'none';
 
-        real_estate.forEach(re => {
-            let received = re.downpayment || 0;
-            let total = re.value || 0;
-            let remaining = total - received;
-            
-            // Calculate projections
-            if(re.installments) {
-                re.installments.forEach(inst => {
-                    if(!inst.paid) {
-                        // Tratar timezone para a data (evitar pular mês por fuso)
-                        const d = new Date(inst.date + 'T12:00:00Z');
-                        
-                        if(d >= today && d <= next30Days) {
-                            totalRevenue30d += inst.value;
-                        }
-                        
-                        // Chart Projection
-                        let pKey = `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}`;
-                        if(projectionMap[pKey]) {
-                            projectionMap[pKey].total += inst.value;
-                        }
-                    }
-                });
-            }
+        const detailPanel = document.getElementById('building-detail-panel');
+        detailPanel.style.display = 'block';
 
-            tbody += `
-                <tr>
-                    <td class="asset-name" style="color: #fff; font-weight: 600;">${re.name}</td>
-                    <td>${formatCurrency(total)}</td>
-                    <td style="color: var(--accent-green); font-weight: 500;">${formatCurrency(received)}</td>
-                    <td style="color: var(--accent-gold); font-weight: 600;">${formatCurrency(remaining)}</td>
-                    <td style="text-align: right;">
-                        <button onclick="window.addPayment(${re.id})" title="Lançar Pagamento Recebido" style="background:var(--accent-green); border:none; color:#131722; cursor:pointer; font-size:11px; font-weight:600; padding:4px 8px; border-radius:4px; margin-right:8px;"><i class="fa-solid fa-plus"></i></button>
-                        <button class="btn-del" onclick="window.deleteRealEstate(${re.id})" title="Excluir" style="background:none; border:none; color:#FF3D57; cursor:pointer;" class="btn-filter"><i class="fa-solid fa-trash"></i></button>
-                    </td>
-                </tr>
-            `;
+        // Reset filter buttons
+        document.querySelectorAll('.detail-panel-filters .btn-filter').forEach(b => {
+            b.classList.toggle('active', b.getAttribute('data-unit-filter') === 'all');
         });
 
-        const listEl = document.getElementById('kb-prospeccao'); // Reusing ID from table body
-        if (listEl) {
-            listEl.innerHTML = real_estate.length > 0 ? tbody : '<tr><td colspan="5" class="empty-state">Nenhum contrato ativo.</td></tr>';
-        }
+        renderBuildingDetail();
+    };
 
-        // Update Dashboard Summary Widget
-        const revEl = document.getElementById('re-monthly-revenue');
-        if (revEl) revEl.innerText = formatCurrency(totalRevenue30d);
-        
-        // Update Chart
-        const chartLabels = Object.values(projectionMap).map(v => v.label);
-        const chartData = Object.values(projectionMap).map(v => v.total);
-        
-        const ctx = document.getElementById('cashflowChart');
-        if (ctx) {
-            if (cashflowChartObj) {
-                cashflowChartObj.data.labels = chartLabels;
-                cashflowChartObj.data.datasets[0].data = chartData;
-                cashflowChartObj.update();
-            } else {
-                cashflowChartObj = new Chart(ctx.getContext('2d'), {
-                    type: 'bar',
-                    data: {
-                        labels: chartLabels,
-                        datasets: [{
-                            label: 'Recebimentos Futuros',
-                            data: chartData,
-                            backgroundColor: 'rgba(41, 98, 255, 0.7)',
-                            borderColor: '#2962FF',
-                            borderWidth: 1,
-                            borderRadius: 4
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: { display: false },
-                            tooltip: { 
-                                callbacks: { 
-                                    label: (c) => formatCurrency(c.raw) 
-                                } 
-                            }
-                        },
-                        scales: {
-                            y: { ticks: { callback: (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', maximumSignificantDigits: 3, notation:'compact' }).format(val) }, grid: { color: 'rgba(255,255,255,0.05)' } },
-                            x: { grid: { display: false } }
-                        }
-                    }
-                });
-            }
-        }
-        
-        if (typeof window.updateTotalEquity === 'function') {
-            window.updateTotalEquity();
+    window.closeBuildingDetail = () => {
+        _currentBuildingId = null;
+        document.getElementById('re-buildings-grid').style.display = 'grid';
+        document.querySelector('#imobiliaria > .section-header').style.display = 'flex';
+        document.getElementById('building-detail-panel').style.display = 'none';
+        updateRealEstateUI(); // refresh cards
+    };
+
+    window.filterUnits = (filter, btn) => {
+        _currentUnitFilter = filter;
+        document.querySelectorAll('.detail-panel-filters .btn-filter').forEach(b => b.classList.remove('active'));
+        if (btn) btn.classList.add('active');
+        renderBuildingDetail();
+    };
+
+    window.openAddUnitModal = () => {
+        document.getElementById('add-unit-label').value = '';
+        document.getElementById('add-unit-status').value = 'disponivel';
+        document.getElementById('modal-add-unit').classList.add('visible');
+    };
+
+    window.editUnit = (buildingId, unitId) => {
+        const building = real_estate.find(b => b.id === buildingId);
+        if (!building) return;
+        const unit = building.units.find(u => u.id === unitId);
+        if (!unit) return;
+
+        document.getElementById('edit-unit-building-id').value = buildingId;
+        document.getElementById('edit-unit-id').value = unitId;
+        document.getElementById('edit-unit-label').value = unit.label;
+        document.getElementById('edit-unit-status').value = unit.status;
+        document.getElementById('edit-unit-rent').value = unit.rentValue || '';
+        document.getElementById('edit-unit-sale').value = unit.saleValue || '';
+        document.getElementById('edit-unit-notes').value = unit.notes || '';
+        document.getElementById('edit-unit-title').textContent = `Editar ${unit.label}`;
+
+        // Toggle groups
+        const status = unit.status;
+        document.getElementById('edit-unit-rent-group').style.display = (status === 'alugado') ? 'block' : 'none';
+        document.getElementById('edit-unit-sale-group').style.display = (status === 'vendido') ? 'block' : 'none';
+
+        document.getElementById('modal-edit-unit').classList.add('visible');
+    };
+
+    window.deleteUnit = (buildingId, unitId, e) => {
+        if (e) { e.stopPropagation(); e.preventDefault(); }
+        const building = real_estate.find(b => b.id === buildingId);
+        if (!building) return;
+        if (confirm("Deseja excluir esta unidade?")) {
+            building.units = building.units.filter(u => u.id !== unitId);
+            building.totalUnits = building.units.length;
+            saveRealEstate();
+            renderBuildingDetail();
+            updateRealEstateSummary();
         }
     };
 
-    const reForm = document.getElementById('re-form');
-    if (reForm) {
-        reForm.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('re-name').value;
-            const value = parseFloat(document.getElementById('re-value').value) || 0;
-            const downpayment = parseFloat(document.getElementById('re-downpayment').value) || 0;
-            
-            // Mensais
-            const mensaisQtd = parseInt(document.getElementById('re-mensais-qtd').value) || 0;
-            const mensaisVal = parseFloat(document.getElementById('re-mensais-val').value) || 0;
-            const mensaisInicioStr = document.getElementById('re-mensais-inicio').value;
-            
-            // Balões
-            const balaoQtd = parseInt(document.getElementById('re-balao-qtd').value) || 0;
-            const balaoVal = parseFloat(document.getElementById('re-balao-val').value) || 0;
-            const balaoInicioStr = document.getElementById('re-balao-inicio').value;
-            const balaoFreq = parseInt(document.getElementById('re-balao-freq').value) || 12;
+    function getOccupancyInfo(building) {
+        const units = building.units || [];
+        const total = units.length;
+        const rented = units.filter(u => u.status === 'alugado').length;
+        const sold = units.filter(u => u.status === 'vendido').length;
+        const available = units.filter(u => u.status === 'disponivel').length;
+        const occupied = rented + sold;
+        const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
+        const totalRent = units.filter(u => u.status === 'alugado').reduce((s, u) => s + (u.rentValue || 0), 0);
+        const totalSales = units.filter(u => u.status === 'vendido').reduce((s, u) => s + (u.saleValue || 0), 0);
 
-            const installments = [];
-            
-            // Generate Monthly
-            if (mensaisQtd > 0 && mensaisVal > 0 && mensaisInicioStr) {
-                // T + 12:00:00Z previne fuso de roubar 1 dia no Javascript local
-                const mensaisInicio = new Date(mensaisInicioStr + 'T12:00:00Z');
-                for (let i=0; i<mensaisQtd; i++) {
-                    let d = new Date(mensaisInicio.getTime());
-                    d.setMonth(d.getMonth() + i);
-                    installments.push({
-                        type: 'Mensal',
-                        value: mensaisVal,
-                        date: d.toISOString().split('T')[0],
-                        paid: false
-                    });
-                }
+        let barClass = 'occupancy-low';
+        if (pct >= 90) barClass = 'occupancy-full';
+        else if (pct >= 60) barClass = 'occupancy-high';
+        else if (pct >= 30) barClass = 'occupancy-medium';
+
+        return { total, rented, sold, available, occupied, pct, barClass, totalRent, totalSales };
+    }
+
+    function renderBuildingCard(building) {
+        const info = getOccupancyInfo(building);
+
+        return `
+            <div class="building-card" data-building-id="${building.id}">
+                <button class="building-card-delete" data-delete-building="${building.id}" title="Excluir Imóvel">
+                    <i class="fa-solid fa-trash-can"></i>
+                </button>
+                <div class="building-card-header">
+                    <div class="building-card-title">
+                        <div class="building-card-icon">
+                            <i class="fa-solid fa-building"></i>
+                        </div>
+                        <div>
+                            <div class="building-card-name">${building.name}</div>
+                            ${building.address ? `<div class="building-card-address"><i class="fa-solid fa-location-dot" style="margin-right:4px;"></i>${building.address}</div>` : ''}
+                        </div>
+                    </div>
+                    <span class="building-card-units-badge">${info.total} unid.</span>
+                </div>
+
+                <div class="occupancy-bar-container">
+                    <div class="occupancy-bar-label">
+                        <span>Ocupação</span>
+                        <span class="occupancy-bar-pct">${info.pct}%</span>
+                    </div>
+                    <div class="occupancy-bar">
+                        <div class="occupancy-bar-fill ${info.barClass}" style="width: ${info.pct}%"></div>
+                    </div>
+                </div>
+
+                <div class="building-card-stats">
+                    <div class="building-stat">
+                        <span class="building-stat-label">Alugados</span>
+                        <span class="building-stat-value green">${info.rented}</span>
+                    </div>
+                    <div class="building-stat">
+                        <span class="building-stat-label">Vendidos</span>
+                        <span class="building-stat-value red">${info.sold}</span>
+                    </div>
+                    <div class="building-stat">
+                        <span class="building-stat-label">Disponíveis</span>
+                        <span class="building-stat-value gold">${info.available}</span>
+                    </div>
+                </div>
+
+                <div class="building-card-footer">
+                    <div class="building-revenue">
+                        <span class="building-revenue-label">Renda Mensal</span>
+                        <span class="building-revenue-value">${formatCurrency(info.totalRent)}</span>
+                    </div>
+                    <div class="building-card-arrow">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+
+    function renderBuildingDetail() {
+        const building = real_estate.find(b => b.id === _currentBuildingId);
+        if (!building) return;
+
+        const info = getOccupancyInfo(building);
+        document.getElementById('detail-building-name').textContent = building.name;
+
+        // Summary cards
+        const summaryEl = document.getElementById('detail-summary-cards');
+        summaryEl.innerHTML = `
+            <div class="card">
+                <div class="card-icon green"><i class="fa-solid fa-key"></i></div>
+                <div class="card-info">
+                    <h3>Alugados</h3>
+                    <h2 style="color: var(--accent-green);">${info.rented} <span style="font-size: 14px; font-weight: 400; color: var(--text-secondary);">de ${info.total}</span></h2>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-icon" style="background-color: rgba(255,61,87,0.1); color: var(--accent-red);"><i class="fa-solid fa-tag"></i></div>
+                <div class="card-info">
+                    <h3>Vendidos</h3>
+                    <h2 style="color: var(--accent-red);">${info.sold} <span style="font-size: 14px; font-weight: 400; color: var(--text-secondary);">${formatCurrency(info.totalSales)}</span></h2>
+                </div>
+            </div>
+            <div class="card">
+                <div class="card-icon"><i class="fa-solid fa-coins"></i></div>
+                <div class="card-info">
+                    <h3>Renda Mensal</h3>
+                    <h2 style="color: var(--accent-green);">${formatCurrency(info.totalRent)}</h2>
+                </div>
+            </div>
+        `;
+
+        // Units grid
+        let units = building.units || [];
+        if (_currentUnitFilter !== 'all') {
+            units = units.filter(u => u.status === _currentUnitFilter);
+        }
+
+        const unitsGrid = document.getElementById('units-grid');
+        if (units.length === 0) {
+            unitsGrid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1; padding: 40px;">Nenhuma unidade encontrada para este filtro.</div>';
+            return;
+        }
+
+        unitsGrid.innerHTML = units.map(u => {
+            const statusLabel = u.status === 'alugado' ? 'Alugado' : u.status === 'vendido' ? 'Vendido' : 'Disponível';
+            let valueHtml = '';
+            if (u.status === 'alugado' && u.rentValue) {
+                valueHtml = `<div class="unit-card-value rent">${formatCurrency(u.rentValue)}/mês</div>`;
+            } else if (u.status === 'vendido' && u.saleValue) {
+                valueHtml = `<div class="unit-card-value sale">${formatCurrency(u.saleValue)}</div>`;
+            } else {
+                valueHtml = `<div class="unit-card-value empty">—</div>`;
             }
-            
-            // Generate Baloes
-            if (balaoQtd > 0 && balaoVal > 0 && balaoInicioStr) {
-                const balaoInicio = new Date(balaoInicioStr + 'T12:00:00Z');
-                for (let i=0; i<balaoQtd; i++) {
-                    let d = new Date(balaoInicio.getTime());
-                    d.setMonth(d.getMonth() + (i * balaoFreq));
-                    installments.push({
-                        type: 'Balão',
-                        value: balaoVal,
-                        date: d.toISOString().split('T')[0],
-                        paid: false
-                    });
-                }
+
+            return `
+                <div class="unit-card status-${u.status}" data-edit-unit="${u.id}" data-parent-building="${building.id}">
+                    <button class="unit-card-delete-btn" data-delete-unit="${u.id}" data-delete-unit-building="${building.id}" title="Excluir Unidade">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                    <div class="unit-card-header">
+                        <span class="unit-card-label">${u.label}</span>
+                        <span class="unit-status-badge ${u.status}">${statusLabel}</span>
+                    </div>
+                    ${valueHtml}
+                    ${u.notes ? `<div class="unit-card-notes"><i class="fa-solid fa-comment" style="margin-right:4px; opacity: 0.5;"></i>${u.notes}</div>` : ''}
+                </div>
+            `;
+        }).join('');
+    }
+
+    function updateRealEstateSummary() {
+        let totalUnits = 0, totalRent = 0, totalSales = 0;
+        real_estate.forEach(b => {
+            const info = getOccupancyInfo(b);
+            totalUnits += info.total;
+            totalRent += info.totalRent;
+            totalSales += info.totalSales;
+        });
+
+        const unitsEl = document.getElementById('re-total-units');
+        const rentEl = document.getElementById('re-total-rent');
+        const salesEl = document.getElementById('re-total-sales');
+
+        if (unitsEl) unitsEl.textContent = totalUnits;
+        if (rentEl) rentEl.textContent = formatCurrency(totalRent);
+        if (salesEl) salesEl.textContent = formatCurrency(totalSales);
+
+        // Update Visão Geral revenue card (reuse existing RE summary element)
+        const revEl = document.getElementById('re-monthly-revenue');
+        if (revEl) revEl.innerText = formatCurrency(totalRent);
+    }
+
+    window.updateRealEstateUI = () => {
+        const grid = document.getElementById('re-buildings-grid');
+        if (!grid) return;
+
+        if (real_estate.length === 0) {
+            grid.innerHTML = `
+                <div class="empty-state" style="grid-column: 1 / -1; padding: 60px 20px;">
+                    <i class="fa-solid fa-city" style="font-size: 48px; color: var(--text-secondary); opacity: 0.3; margin-bottom: 16px; display: block;"></i>
+                    Nenhum imóvel cadastrado. Clique em "Novo Imóvel" para começar.
+                </div>
+            `;
+        } else {
+            grid.innerHTML = real_estate.map(b => renderBuildingCard(b)).join('');
+        }
+
+        updateRealEstateSummary();
+
+        // If detail panel is open, refresh it too
+        if (_currentBuildingId) {
+            const building = real_estate.find(b => b.id === _currentBuildingId);
+            if (building) {
+                renderBuildingDetail();
+            }
+        }
+    };
+
+    // ─── Event Delegation (avoids inline onclick bubbling issues) ─────────────
+    const buildingsGrid = document.getElementById('re-buildings-grid');
+    if (buildingsGrid) {
+        buildingsGrid.addEventListener('click', (e) => {
+            // Check if clicked on delete button or its child icon
+            const deleteBtn = e.target.closest('[data-delete-building]');
+            if (deleteBtn) {
+                e.stopPropagation();
+                const id = parseInt(deleteBtn.getAttribute('data-delete-building'));
+                window.deleteBuilding(id);
+                return;
+            }
+            // Otherwise, check if clicked on a building card
+            const card = e.target.closest('[data-building-id]');
+            if (card) {
+                const id = parseInt(card.getAttribute('data-building-id'));
+                window.openBuildingDetail(id);
+            }
+        });
+    }
+
+    const unitsGridEl = document.getElementById('units-grid');
+    if (unitsGridEl) {
+        unitsGridEl.addEventListener('click', (e) => {
+            // Check if clicked on delete button or its child icon
+            const deleteBtn = e.target.closest('[data-delete-unit]');
+            if (deleteBtn) {
+                e.stopPropagation();
+                const unitId = parseInt(deleteBtn.getAttribute('data-delete-unit'));
+                const buildingId = parseInt(deleteBtn.getAttribute('data-delete-unit-building'));
+                window.deleteUnit(buildingId, unitId);
+                return;
+            }
+            // Otherwise, check if clicked on a unit card
+            const card = e.target.closest('[data-edit-unit]');
+            if (card) {
+                const unitId = parseInt(card.getAttribute('data-edit-unit'));
+                const buildingId = parseInt(card.getAttribute('data-parent-building'));
+                window.editUnit(buildingId, unitId);
+            }
+        });
+    }
+
+    const formAddBuilding = document.getElementById('form-add-building');
+    if (formAddBuilding) {
+        formAddBuilding.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const name = document.getElementById('building-name').value.trim();
+            const qty = parseInt(document.getElementById('building-units-qty').value) || 0;
+            const prefix = document.getElementById('building-unit-prefix').value.trim() || 'Unidade';
+            const address = document.getElementById('building-address').value.trim();
+
+            if (!name || qty <= 0) return;
+
+            const units = [];
+            for (let i = 1; i <= qty; i++) {
+                units.push({
+                    id: i,
+                    label: `${prefix} ${i}`,
+                    status: 'disponivel',
+                    rentValue: 0,
+                    saleValue: 0,
+                    notes: ''
+                });
             }
 
             real_estate.push({
                 id: Date.now(),
                 name,
-                value,
-                downpayment,
-                installments
+                address,
+                totalUnits: qty,
+                units
             });
 
             saveRealEstate();
             updateRealEstateUI();
-            
-            document.getElementById('modal-real-estate').classList.remove('visible');
-            reForm.reset();
+
+            document.getElementById('modal-add-building').classList.remove('visible');
+            formAddBuilding.reset();
         });
     }
 
-    const vgReForm = document.getElementById('add-imob-form');
-    if (vgReForm) {
-        vgReForm.addEventListener('submit', (e) => {
+    // ─── Form: Edit Unit ─────────────────────────────────────────────────────
+    const formEditUnit = document.getElementById('form-edit-unit');
+    if (formEditUnit) {
+        formEditUnit.addEventListener('submit', (e) => {
             e.preventDefault();
-            const name = document.getElementById('vg-re-name').value;
-            const value = parseFloat(document.getElementById('vg-re-value').value) || 0;
-            const downpayment = parseFloat(document.getElementById('vg-re-downpayment').value) || 0;
-            
-            const mensaisQtd = parseInt(document.getElementById('vg-re-mensais-qtd').value) || 0;
-            const mensaisVal = parseFloat(document.getElementById('vg-re-mensais-val').value) || 0;
-            const mensaisInicioStr = document.getElementById('vg-re-mensais-inicio').value;
-            
-            const balaoQtd = parseInt(document.getElementById('vg-re-balao-qtd').value) || 0;
-            const balaoVal = parseFloat(document.getElementById('vg-re-balao-val').value) || 0;
-            const balaoInicioStr = document.getElementById('vg-re-balao-inicio').value;
-            const balaoFreq = parseInt(document.getElementById('vg-re-balao-freq').value) || 12;
+            const buildingId = parseInt(document.getElementById('edit-unit-building-id').value);
+            const unitId = parseInt(document.getElementById('edit-unit-id').value);
 
-            const installments = [];
-            
-            if (mensaisQtd > 0 && mensaisVal > 0 && mensaisInicioStr) {
-                const mensaisInicio = new Date(mensaisInicioStr + 'T12:00:00Z');
-                for (let i=0; i<mensaisQtd; i++) {
-                    let d = new Date(mensaisInicio.getTime());
-                    d.setMonth(d.getMonth() + i);
-                    installments.push({ type: 'Mensal', value: mensaisVal, date: d.toISOString().split('T')[0], paid: false });
-                }
-            }
-            
-            if (balaoQtd > 0 && balaoVal > 0 && balaoInicioStr) {
-                const balaoInicio = new Date(balaoInicioStr + 'T12:00:00Z');
-                for (let i=0; i<balaoQtd; i++) {
-                    let d = new Date(balaoInicio.getTime());
-                    d.setMonth(d.getMonth() + (i * balaoFreq));
-                    installments.push({ type: 'Balão', value: balaoVal, date: d.toISOString().split('T')[0], paid: false });
-                }
-            }
+            const building = real_estate.find(b => b.id === buildingId);
+            if (!building) return;
+            const unit = building.units.find(u => u.id === unitId);
+            if (!unit) return;
 
-            real_estate.push({ id: Date.now(), name, value, downpayment, installments });
+            unit.label = document.getElementById('edit-unit-label').value.trim();
+            unit.status = document.getElementById('edit-unit-status').value;
+            unit.rentValue = parseFloat(document.getElementById('edit-unit-rent').value) || 0;
+            unit.saleValue = parseFloat(document.getElementById('edit-unit-sale').value) || 0;
+            unit.notes = document.getElementById('edit-unit-notes').value.trim();
 
             saveRealEstate();
-            updateRealEstateUI();
-            
-            vgReForm.reset();
-            const btn = vgReForm.querySelector('.btn-primary');
-            const originalText = btn.innerHTML;
-            btn.innerHTML = '<i class="fa-solid fa-check"></i> Adicionado com Sucesso!';
-            btn.style.backgroundColor = 'var(--accent-green)';
-            setTimeout(() => { btn.innerHTML = originalText; btn.style.backgroundColor = ''; }, 2000);
+            renderBuildingDetail();
+            updateRealEstateSummary();
+
+            document.getElementById('modal-edit-unit').classList.remove('visible');
+        });
+    }
+
+    // ─── Form: Add Unit ──────────────────────────────────────────────────────
+    const formAddUnit = document.getElementById('form-add-unit');
+    if (formAddUnit) {
+        formAddUnit.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const building = real_estate.find(b => b.id === _currentBuildingId);
+            if (!building) return;
+
+            const label = document.getElementById('add-unit-label').value.trim();
+            const status = document.getElementById('add-unit-status').value;
+            if (!label) return;
+
+            const maxId = building.units.reduce((max, u) => Math.max(max, u.id), 0);
+            building.units.push({
+                id: maxId + 1,
+                label,
+                status,
+                rentValue: 0,
+                saleValue: 0,
+                notes: ''
+            });
+            building.totalUnits = building.units.length;
+
+            saveRealEstate();
+            renderBuildingDetail();
+            updateRealEstateSummary();
+
+            document.getElementById('modal-add-unit').classList.remove('visible');
+            formAddUnit.reset();
         });
     }
 

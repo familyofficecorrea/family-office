@@ -121,11 +121,6 @@
                         <h2>Adicionar Ativo</h2>
                     </div>
                     
-                    <div class="asset-type-tabs" style="display: flex; gap: 8px; margin-bottom: 20px; background: rgba(0,0,0,0.2); padding: 4px; border-radius: 8px;">
-                        <button type="button" class="type-tab active" onclick="switchForm('add-asset-form', this)" style="flex:1; background: var(--bg-primary); border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; color: var(--text-primary); cursor: pointer; transition: 0.2s; font-weight: 600; font-size: 13px;">Mercado Financeiro</button>
-                        <button type="button" class="type-tab" onclick="switchForm('add-imob-form', this)" style="flex:1; background: transparent; border: 1px solid transparent; border-radius: 6px; padding: 8px; color: var(--text-secondary); cursor: pointer; transition: 0.2s; font-weight: 500; font-size: 13px;">Imobiliário</button>
-                    </div>
-
                     <form id="add-asset-form">
                         <!-- Tipo de Operação -->
                         <div class="input-group" style="margin-bottom: 12px;">
@@ -212,63 +207,6 @@
                         </button>
                     </form>
 
-                    <form id="add-imob-form" style="display: none; flex-direction: column; gap: 16px;">
-                        <div class="input-group">
-                            <label>Empreendimento / Cliente</label>
-                            <input type="text" id="vg-re-name" required placeholder="Ex: Lote 4 - João Silva">
-                        </div>
-                        <div style="display: flex; gap: 16px;">
-                            <div class="input-group" style="flex: 1;">
-                                <label>VGV Total (R$)</label>
-                                <input type="number" id="vg-re-value" required step="0.01" min="0">
-                            </div>
-                            <div class="input-group" style="flex: 1;">
-                                <label>Entrada Recebida (R$)</label>
-                                <input type="number" id="vg-re-downpayment" required step="0.01" min="0">
-                            </div>
-                        </div>
-                        
-                        <h4 style="color: var(--text-secondary); margin-top: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Parcelas Mensais</h4>
-                        <div style="display: flex; gap: 16px;">
-                            <div class="input-group" style="flex: 1;">
-                                <label>Qtd Meses</label>
-                                <input type="number" id="vg-re-mensais-qtd" value="0" min="0">
-                            </div>
-                            <div class="input-group" style="flex: 1;">
-                                <label>Valor (R$)</label>
-                                <input type="number" id="vg-re-mensais-val" step="0.01" value="0" min="0">
-                            </div>
-                            <div class="input-group" style="flex: 1;">
-                                <label>1º Vencimento</label>
-                                <input type="date" id="vg-re-mensais-inicio">
-                            </div>
-                        </div>
-
-                        <h4 style="color: var(--text-secondary); margin-top: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Balões Anuais/Semestrais</h4>
-                        <div style="display: flex; gap: 16px;">
-                            <div class="input-group" style="flex: 1;">
-                                <label>Qtd Balões</label>
-                                <input type="number" id="vg-re-balao-qtd" value="0" min="0">
-                            </div>
-                            <div class="input-group" style="flex: 1;">
-                                <label>Valor (R$)</label>
-                                <input type="number" id="vg-re-balao-val" step="0.01" value="0" min="0">
-                            </div>
-                            <div class="input-group" style="flex: 1;">
-                                <label>1º Vencimento</label>
-                                <input type="date" id="vg-re-balao-inicio">
-                            </div>
-                        </div>
-                        <div class="input-group">
-                            <label>Meses entre balões</label>
-                            <input type="number" id="vg-re-balao-freq" value="12" min="1" placeholder="Ex: 12 (Anual)">
-                        </div>
-
-                        <button type="submit" class="btn-primary" style="margin-top: 8px;">
-                            <i class="fa-solid fa-plus"></i> Adicionar ao Real Estate
-                        </button>
-                    </form>
-
                     <div class="recent-assets">
                         <h3>Últimos Adicionados</h3>
                         <ul id="asset-list" class="asset-list">
@@ -342,113 +280,168 @@
 
             <!-- Tab: Real Estate -->
             <div id="imobiliaria" class="tab-content">
-                <div class="section-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
-                    <h2>Gestão de Real Estate</h2>
-                    <button class="btn-primary" id="btn-add-real-estate" onclick="document.getElementById('modal-real-estate').classList.add('visible')">
-                        <i class="fa-solid fa-plus"></i> Novo Contrato
-                    </button>
-                </div>
-                
-                <div class="dashboard-grid">
-                    <!-- Cashflow Projection Chart -->
-                    <section class="chart-section glass-panel" style="grid-column: span 2;">
-                        <div class="section-header">
-                            <h2>Projeção de Fluxo de Caixa (Próx 12 Meses)</h2>
+                <!-- Summary Cards -->
+                <section class="summary-cards" style="margin-bottom: 32px;">
+                    <div class="card premium-card">
+                        <div class="card-icon"><i class="fa-solid fa-building"></i></div>
+                        <div class="card-info">
+                            <h3>Total de Unidades</h3>
+                            <h2 id="re-total-units">0</h2>
                         </div>
-                        <div class="chart-container" style="height: 350px;">
-                            <canvas id="cashflowChart"></canvas>
-                        </div>
-                    </section>
-                </div>
-                
-                <!-- Detailed Contracts Table -->
-                <section class="portfolio-details glass-panel section-mt" style="margin-top: 24px; padding: 24px;">
-                    <div class="section-header">
-                        <h2>Contratos Ativos</h2>
                     </div>
-                    <div class="table-responsive" style="overflow-x: auto;">
-                        <table class="premium-table" id="re-contracts-table">
-                            <thead>
-                                <tr>
-                                    <th>Projeto / Cliente</th>
-                                    <th>VGV (Total)</th>
-                                    <th>Já Recebido</th>
-                                    <th>Saldo Restante</th>
-                                    <th style="text-align: right;">Ações</th>
-                                </tr>
-                            </thead>
-                            <tbody id="kb-prospeccao">
-                                <tr><td colspan="5" class="empty-state">Nenhum contrato ativo.</td></tr>
-                            </tbody>
-                        </table>
+                    <div class="card">
+                        <div class="card-icon green"><i class="fa-solid fa-key"></i></div>
+                        <div class="card-info">
+                            <h3>Renda Mensal (Aluguéis)</h3>
+                            <h2 id="re-total-rent">R$ 0,00</h2>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon blue"><i class="fa-solid fa-hand-holding-dollar"></i></div>
+                        <div class="card-info">
+                            <h3>Receita de Vendas</h3>
+                            <h2 id="re-total-sales">R$ 0,00</h2>
+                        </div>
                     </div>
                 </section>
+
+                <div class="section-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
+                    <h2>Meus Imóveis</h2>
+                    <button class="btn-primary" id="btn-add-building" style="width: auto; margin-bottom: 0; padding: 10px 20px;" onclick="document.getElementById('modal-add-building').classList.add('visible')">
+                        <i class="fa-solid fa-plus"></i> Novo Imóvel
+                    </button>
+                </div>
+
+                <!-- Building Cards Grid -->
+                <div id="re-buildings-grid" class="buildings-grid">
+                    <div class="empty-state" style="grid-column: 1 / -1; padding: 60px 20px;">
+                        <i class="fa-solid fa-city" style="font-size: 48px; color: var(--text-secondary); opacity: 0.3; margin-bottom: 16px; display: block;"></i>
+                        Nenhum imóvel cadastrado. Clique em "Novo Imóvel" para começar.
+                    </div>
+                </div>
+
+                <!-- Building Detail Panel (hidden by default) -->
+                <div id="building-detail-panel" class="building-detail-panel" style="display: none;">
+                    <div class="detail-panel-header">
+                        <button class="btn-back" onclick="window.closeBuildingDetail()">
+                            <i class="fa-solid fa-arrow-left"></i> Voltar
+                        </button>
+                        <h2 id="detail-building-name">—</h2>
+                        <div style="display: flex; gap: 8px;">
+                            <button class="btn-refresh" id="btn-add-unit" onclick="window.openAddUnitModal()">
+                                <i class="fa-solid fa-plus"></i> Adicionar Unidade
+                            </button>
+                        </div>
+                    </div>
+                    <div id="detail-summary-cards" class="summary-cards" style="margin-bottom: 24px;"></div>
+                    <div class="detail-panel-filters">
+                        <button class="btn-filter active" data-unit-filter="all" onclick="window.filterUnits('all', this)">Todos</button>
+                        <button class="btn-filter" data-unit-filter="alugado" onclick="window.filterUnits('alugado', this)">🟢 Alugados</button>
+                        <button class="btn-filter" data-unit-filter="vendido" onclick="window.filterUnits('vendido', this)">🔴 Vendidos</button>
+                        <button class="btn-filter" data-unit-filter="disponivel" onclick="window.filterUnits('disponivel', this)">🟡 Disponíveis</button>
+                    </div>
+                    <div id="units-grid" class="units-grid"></div>
+                </div>
             </div> <!-- End imobiliaria tab -->
 
         </main>
     </div>
 
-    <!-- Real Estate Modal -->
-    <div id="modal-real-estate" class="modal-overlay">
-        <div class="modal-content glass-panel" style="max-width: 500px; width: 100%;">
+    <!-- Modal: Adicionar Novo Imóvel -->
+    <div id="modal-add-building" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 480px; width: 100%;">
             <div class="section-header" style="margin-bottom: 20px;">
-                <h3 id="re-modal-title">Novo Contrato de Real Estate</h3>
-                <button class="btn-close" type="button" onclick="document.getElementById('modal-real-estate').classList.remove('visible')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
+                <h3>Novo Imóvel / Empreendimento</h3>
+                <button class="btn-close" type="button" onclick="document.getElementById('modal-add-building').classList.remove('visible')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
             </div>
-            <form id="re-form" style="display: flex; flex-direction: column; gap: 16px;">
-                <input type="hidden" id="re-id">
+            <form id="form-add-building" style="display: flex; flex-direction: column; gap: 16px;">
                 <div class="input-group">
-                    <label>Empreendimento / Cliente</label>
-                    <input type="text" id="re-name" required placeholder="Ex: Lote 4 - João Silva">
-                </div>
-                <div style="display: flex; gap: 16px;">
-                    <div class="input-group" style="flex: 1;">
-                        <label>VGV Total (R$)</label>
-                        <input type="number" id="re-value" required step="0.01" min="0">
-                    </div>
-                    <div class="input-group" style="flex: 1;">
-                        <label>Entrada Recebida (R$)</label>
-                        <input type="number" id="re-downpayment" required step="0.01" min="0">
-                    </div>
-                </div>
-                
-                <h4 style="color: var(--text-secondary); margin-top: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Parcelas Mensais</h4>
-                <div style="display: flex; gap: 16px;">
-                    <div class="input-group" style="flex: 1;">
-                        <label>Qtd Meses</label>
-                        <input type="number" id="re-mensais-qtd" value="0" min="0">
-                    </div>
-                    <div class="input-group" style="flex: 1;">
-                        <label>Valor (R$)</label>
-                        <input type="number" id="re-mensais-val" step="0.01" value="0" min="0">
-                    </div>
-                    <div class="input-group" style="flex: 1;">
-                        <label>1º Vencimento</label>
-                        <input type="date" id="re-mensais-inicio">
-                    </div>
-                </div>
-
-                <h4 style="color: var(--text-secondary); margin-top: 8px; border-bottom: 1px solid var(--border-color); padding-bottom: 4px;">Balões Anuais/Semestrais</h4>
-                <div style="display: flex; gap: 16px;">
-                    <div class="input-group" style="flex: 1;">
-                        <label>Qtd Balões</label>
-                        <input type="number" id="re-balao-qtd" value="0" min="0">
-                    </div>
-                    <div class="input-group" style="flex: 1;">
-                        <label>Valor (R$)</label>
-                        <input type="number" id="re-balao-val" step="0.01" value="0" min="0">
-                    </div>
-                    <div class="input-group" style="flex: 1;">
-                        <label>1º Vencimento</label>
-                        <input type="date" id="re-balao-inicio">
-                    </div>
+                    <label>Nome do Imóvel</label>
+                    <input type="text" id="building-name" required placeholder="Ex: Prédio Odzun">
                 </div>
                 <div class="input-group">
-                    <label>Meses entre balões</label>
-                    <input type="number" id="re-balao-freq" value="12" min="1" placeholder="Ex: 12 (Anual)">
+                    <label>Quantidade de Unidades</label>
+                    <input type="number" id="building-units-qty" required placeholder="Ex: 38" min="1">
                 </div>
+                <div class="input-group">
+                    <label>Prefixo das Unidades (opcional)</label>
+                    <input type="text" id="building-unit-prefix" placeholder="Ex: Apt, Sala, Lote (padrão: Unidade)">
+                </div>
+                <div class="input-group">
+                    <label>Endereço (opcional)</label>
+                    <input type="text" id="building-address" placeholder="Ex: Rua X, 123 - Centro">
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 8px;">
+                    <i class="fa-solid fa-building"></i> Adicionar Imóvel
+                </button>
+            </form>
+        </div>
+    </div>
 
-                <button type="submit" class="btn-primary" style="margin-top: 8px;">Gerar Contrato</button>
+    <!-- Modal: Editar Unidade -->
+    <div id="modal-edit-unit" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 440px; width: 100%;">
+            <div class="section-header" style="margin-bottom: 20px;">
+                <h3 id="edit-unit-title">Editar Unidade</h3>
+                <button class="btn-close" type="button" onclick="document.getElementById('modal-edit-unit').classList.remove('visible')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-edit-unit" style="display: flex; flex-direction: column; gap: 16px;">
+                <input type="hidden" id="edit-unit-building-id">
+                <input type="hidden" id="edit-unit-id">
+                <div class="input-group">
+                    <label>Nome / Identificação</label>
+                    <input type="text" id="edit-unit-label" required placeholder="Ex: Apt 101">
+                </div>
+                <div class="input-group">
+                    <label>Status</label>
+                    <select id="edit-unit-status" class="premium-select" required>
+                        <option value="disponivel">🟡 Disponível</option>
+                        <option value="alugado">🟢 Alugado</option>
+                        <option value="vendido">🔴 Vendido</option>
+                    </select>
+                </div>
+                <div class="input-group" id="edit-unit-rent-group">
+                    <label>Valor do Aluguel Mensal (R$)</label>
+                    <input type="number" id="edit-unit-rent" step="0.01" min="0" placeholder="Ex: 1200">
+                </div>
+                <div class="input-group" id="edit-unit-sale-group" style="display: none;">
+                    <label>Valor de Venda (R$)</label>
+                    <input type="number" id="edit-unit-sale" step="0.01" min="0" placeholder="Ex: 180000">
+                </div>
+                <div class="input-group">
+                    <label>Observações</label>
+                    <input type="text" id="edit-unit-notes" placeholder="Ex: Contrato até 12/2026">
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 8px;">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar Alterações
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal: Adicionar Unidade Extra -->
+    <div id="modal-add-unit" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 440px; width: 100%;">
+            <div class="section-header" style="margin-bottom: 20px;">
+                <h3>Adicionar Unidade</h3>
+                <button class="btn-close" type="button" onclick="document.getElementById('modal-add-unit').classList.remove('visible')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-add-unit" style="display: flex; flex-direction: column; gap: 16px;">
+                <div class="input-group">
+                    <label>Nome / Identificação</label>
+                    <input type="text" id="add-unit-label" required placeholder="Ex: Apt 39">
+                </div>
+                <div class="input-group">
+                    <label>Status</label>
+                    <select id="add-unit-status" class="premium-select">
+                        <option value="disponivel">🟡 Disponível</option>
+                        <option value="alugado">🟢 Alugado</option>
+                        <option value="vendido">🔴 Vendido</option>
+                    </select>
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 8px;">
+                    <i class="fa-solid fa-plus"></i> Adicionar
+                </button>
             </form>
         </div>
     </div>
@@ -457,29 +450,21 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- Tooltip Interativo das Abas -->
     <script>
-        window.switchForm = function(formId, btn) {
-            document.querySelectorAll('.type-tab').forEach(t => {
-                t.classList.remove('active');
-                t.style.background = 'transparent';
-                t.style.borderColor = 'transparent';
-                t.style.color = 'var(--text-secondary)';
-                t.style.fontWeight = '500';
-            });
-            btn.classList.add('active');
-            btn.style.background = 'var(--bg-primary)';
-            btn.style.borderColor = 'var(--border-color)';
-            btn.style.color = 'var(--text-primary)';
-            btn.style.fontWeight = '600';
-
-            document.getElementById('add-asset-form').style.display = 'none';
-            document.getElementById('add-imob-form').style.display = 'none';
-            
-            if (formId === 'add-imob-form') {
-                document.getElementById(formId).style.display = 'flex';
+        // Edit unit status toggle
+        document.getElementById('edit-unit-status').addEventListener('change', function() {
+            const rentGroup = document.getElementById('edit-unit-rent-group');
+            const saleGroup = document.getElementById('edit-unit-sale-group');
+            if (this.value === 'alugado') {
+                rentGroup.style.display = 'block';
+                saleGroup.style.display = 'none';
+            } else if (this.value === 'vendido') {
+                rentGroup.style.display = 'none';
+                saleGroup.style.display = 'block';
             } else {
-                document.getElementById(formId).style.display = 'block';
+                rentGroup.style.display = 'none';
+                saleGroup.style.display = 'none';
             }
-        };
+        });
     </script>
     <!-- Custom Script -->
     <script src="app.js?v=2.2"></script>
