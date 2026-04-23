@@ -1400,11 +1400,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function getOccupancyInfo(building) {
         const units = building.units || [];
-        const total = units.length;
-        const rented = units.filter(u => u.status === 'alugado').length;
+        const activeUnits = units.filter(u => u.status !== 'vendido');
+        const total = activeUnits.length;
+        const rented = activeUnits.filter(u => u.status === 'alugado').length;
         const sold = units.filter(u => u.status === 'vendido').length;
-        const available = units.filter(u => u.status === 'disponivel').length;
-        const occupied = rented + sold;
+        const available = activeUnits.filter(u => u.status === 'disponivel').length;
+        const occupied = rented;
         const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
         const todayStr = new Date().toISOString().split('T')[0];
         const totalRent = units.filter(u => u.status === 'alugado').reduce((s, u) => {
@@ -1651,6 +1652,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     function calcMonthRevs(d) {
         let mRent = 0;
         let mInst = 0;
+        let mSaleVolume = 0;
         const defaultStartDate = new Date(2026, 3, 1); // April 2026
 
         real_estate.forEach(b => {
@@ -1665,20 +1667,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                         if (d >= startMonth) mRent += u.rentValue;
                     }
                 }
-                if (u.status === 'vendido' && u.saleValue > 0 && u.installmentCount > 0) {
-                    const downPay = u.downPayment || 0;
-                    const financed = u.saleValue - downPay;
-                    const installmentVal = financed / u.installmentCount;
-                    if (u.installmentStartDate) {
+                if (u.status === 'vendido' && u.saleValue > 0) {
+                    if (u.installmentCount > 0 && u.installmentStartDate) {
+                        const downPay = u.downPayment || 0;
+                        const financed = u.saleValue - downPay;
+                        const installmentVal = financed / u.installmentCount;
                         const start = new Date(u.installmentStartDate + 'T12:00:00Z');
                         const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
                         const endMonth = new Date(start.getFullYear(), start.getMonth() + u.installmentCount, 1);
                         if (d >= startMonth && d < endMonth) mInst += installmentVal;
                     }
+                    if (u.saleDate) {
+                        const saleD = new Date(u.saleDate + 'T12:00:00Z');
+                        if (saleD.getFullYear() === d.getFullYear() && saleD.getMonth() === d.getMonth()) {
+                            mSaleVolume += u.saleValue;
+                        }
+                    }
                 }
             });
         });
-        return { mRent, mInst };
+        return { mRent, mInst, mSaleVolume };
     }
 
     let rentalChartObj = null;
@@ -1708,7 +1716,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (i === 1) kpiLastMonth = totalMonth;
             if (d.getFullYear() === today.getFullYear()) {
                 kpiYTD_Rent += revs.mRent;
-                kpiYTD_Inst += revs.mInst;
+                kpiYTD_Inst += revs.mSaleVolume; // Sum full sale volume instead of just installments for YTD
             }
         }
 
