@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css?v=2.3">
+    <link rel="stylesheet" href="style.css?v=2.4">
 </head>
 <body>
     <div class="dashboard-container">
@@ -328,6 +328,9 @@
                         </button>
                         <h2 id="detail-building-name">—</h2>
                         <div style="display: flex; gap: 8px;">
+                            <button class="btn-refresh" onclick="window.openEditBuildingModal()" style="border-color: rgba(41,98,255,0.2); color: var(--accent-blue); background: rgba(41,98,255,0.1);">
+                                <i class="fa-solid fa-pen"></i> Editar Imóvel
+                            </button>
                             <button class="btn-refresh" id="btn-add-unit" onclick="window.openAddUnitModal()">
                                 <i class="fa-solid fa-plus"></i> Adicionar Unidade
                             </button>
@@ -463,6 +466,30 @@
         </div>
     </div>
 
+    <!-- Modal: Editar Imóvel -->
+    <div id="modal-edit-building" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 480px; width: 100%;">
+            <div class="section-header" style="margin-bottom: 20px;">
+                <h3>Editar Imóvel</h3>
+                <button class="btn-close" type="button" onclick="document.getElementById('modal-edit-building').classList.remove('visible')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="form-edit-building" style="display: flex; flex-direction: column; gap: 16px;">
+                <input type="hidden" id="edit-building-id">
+                <div class="input-group">
+                    <label>Nome do Imóvel</label>
+                    <input type="text" id="edit-building-name" required placeholder="Ex: Prédio Odzun">
+                </div>
+                <div class="input-group">
+                    <label>Endereço</label>
+                    <input type="text" id="edit-building-address" placeholder="Ex: Rua X, 123 - Centro">
+                </div>
+                <button type="submit" class="btn-primary" style="margin-top: 8px;">
+                    <i class="fa-solid fa-floppy-disk"></i> Salvar Alterações
+                </button>
+            </form>
+        </div>
+    </div>
+
     <!-- Modal: Adicionar Unidade Extra -->
     <div id="modal-add-unit" class="modal-overlay">
         <div class="modal-content glass-panel" style="max-width: 440px; width: 100%;">
@@ -563,6 +590,6 @@
         document.getElementById('edit-unit-installment-count').addEventListener('input', updateInstallmentPreview);
     </script>
     <!-- Custom Script -->
-    <script src="app.js?v=2.3"></script>
+    <script src="app.js?v=2.4"></script>
 </body>
 </html>

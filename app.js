@@ -1329,6 +1329,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('modal-add-unit').classList.add('visible');
     };
 
+    window.openEditBuildingModal = () => {
+        const building = real_estate.find(b => b.id === _currentBuildingId);
+        if (!building) return;
+        document.getElementById('edit-building-id').value = building.id;
+        document.getElementById('edit-building-name').value = building.name || '';
+        document.getElementById('edit-building-address').value = building.address || '';
+        document.getElementById('modal-edit-building').classList.add('visible');
+    };
+
     window.editUnit = (buildingId, unitId) => {
         const building = real_estate.find(b => b.id === buildingId);
         if (!building) return;
@@ -1903,6 +1912,27 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             document.getElementById('modal-add-building').classList.remove('visible');
             formAddBuilding.reset();
+        });
+    }
+
+    // ─── Form: Edit Building ─────────────────────────────────────────────────
+    const formEditBuilding = document.getElementById('form-edit-building');
+    if (formEditBuilding) {
+        formEditBuilding.addEventListener('submit', (e) => {
+            e.preventDefault();
+            const buildingId = parseInt(document.getElementById('edit-building-id').value);
+            const building = real_estate.find(b => b.id === buildingId);
+            if (!building) return;
+
+            building.name = document.getElementById('edit-building-name').value.trim();
+            building.address = document.getElementById('edit-building-address').value.trim();
+
+            saveRealEstate();
+            
+            // Update detail panel header
+            document.getElementById('detail-building-name').textContent = building.name;
+            
+            document.getElementById('modal-edit-building').classList.remove('visible');
         });
     }
 
