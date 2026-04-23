@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css?v=2.5">
+    <link rel="stylesheet" href="style.css?v=2.6">
 </head>
 <body>
     <div class="dashboard-container">
@@ -346,11 +346,40 @@
                     <div id="units-grid" class="units-grid"></div>
                 </div>
 
-                <!-- Rental Income Chart -->
+                <!-- Rental Income Chart & Dashboard -->
                 <section class="chart-section glass-panel" style="margin-top: 32px; padding: 24px;">
-                    <div class="section-header" style="margin-bottom: 16px;">
-                        <h2><i class="fa-solid fa-chart-line" style="margin-right: 8px; color: var(--accent-green);"></i>Evolução da Renda de Aluguéis</h2>
+                    <div class="section-header" style="margin-bottom: 24px;">
+                        <h2><i class="fa-solid fa-chart-line" style="margin-right: 8px; color: var(--accent-green);"></i>Performance Mensal (Aluguéis e Parcelas)</h2>
                     </div>
+                    
+                    <!-- KPIs -->
+                    <div class="summary-cards" style="margin-bottom: 24px; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));">
+                        <div class="card premium-card">
+                            <div class="card-info">
+                                <h3 style="font-size: 13px;">Este Mês</h3>
+                                <h2 id="kpi-this-month" style="font-size: 20px;">R$ 0,00</h2>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-info">
+                                <h3 style="font-size: 13px;">Mês Passado</h3>
+                                <h2 id="kpi-last-month" style="font-size: 20px; color: var(--text-primary);">R$ 0,00</h2>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-info">
+                                <h3 style="font-size: 13px;">Variação (MoM)</h3>
+                                <h2 id="kpi-mom-change" style="font-size: 20px;">0%</h2>
+                            </div>
+                        </div>
+                        <div class="card">
+                            <div class="card-info">
+                                <h3 style="font-size: 13px;">Acumulado do Ano (YTD)</h3>
+                                <h2 id="kpi-ytd" style="font-size: 20px; color: var(--accent-blue);">R$ 0,00</h2>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="chart-container" style="height: 350px;">
                         <canvas id="rentalIncomeChart"></canvas>
                     </div>
@@ -590,6 +619,6 @@
         document.getElementById('edit-unit-installment-count').addEventListener('input', updateInstallmentPreview);
     </script>
     <!-- Custom Script -->
-    <script src="app.js?v=2.5"></script>
+    <script src="app.js?v=2.6"></script>
 </body>
 </html>

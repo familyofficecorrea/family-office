@@ -1643,80 +1643,99 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ctx = document.getElementById('rentalIncomeChart');
         if (!ctx) return;
 
-        // Gather all rented units with a start date
-        const rentedUnits = [];
-        real_estate.forEach(b => {
-            (b.units || []).forEach(u => {
-                if (u.status === 'alugado' && u.rentStartDate && u.rentValue > 0) {
-                    rentedUnits.push({ rent: u.rentValue, start: u.rentStartDate });
-                }
-            });
-        });
-
-        // Current total monthly rent (including units without start date)
-        let currentMonthlyRent = 0;
-        real_estate.forEach(b => {
-            (b.units || []).forEach(u => {
-                if (u.status === 'alugado' && u.rentValue > 0) {
-                    currentMonthlyRent += u.rentValue;
-                }
-            });
-        });
-
-        // Determine timeline: 6 months back + current month + 12 months forward = 19 months
+        // Configuration
+        const MONTHS_BACK = 11;
         const today = new Date();
-        const currentMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-        const MONTHS_BACK = 6;
-        const MONTHS_FORWARD = 12;
-
-        const startDate = new Date(currentMonth);
-        startDate.setMonth(startDate.getMonth() - MONTHS_BACK);
-
+        
         const labels = [];
-        const historicalData = [];
-        const projectionData = [];
-        const totalMonths = MONTHS_BACK + 1 + MONTHS_FORWARD;
+        const rentData = [];
+        const installmentsData = [];
 
-        for (let i = 0; i < totalMonths; i++) {
-            const d = new Date(startDate);
-            d.setMonth(d.getMonth() + i);
-            const monthKey = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
-            labels.push(monthKey);
+        let kpiThisMonth = 0;
+        let kpiLastMonth = 0;
+        let kpiYTD = 0;
 
-            const isCurrentOrPast = d <= currentMonth;
+        for (let i = MONTHS_BACK; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const monthStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
+            labels.push(monthStr);
 
-            if (isCurrentOrPast) {
-                // Historical: sum rent of units that were already active in this month
-                let monthTotal = 0;
-                rentedUnits.forEach(u => {
-                    const unitStart = new Date(u.start + 'T12:00:00Z');
-                    const unitStartMonth = new Date(unitStart.getFullYear(), unitStart.getMonth(), 1);
-                    if (d >= unitStartMonth) {
-                        monthTotal += u.rent;
+            let monthRent = 0;
+            let monthInstallments = 0;
+
+            // Calculate revenues for this specific month
+            real_estate.forEach(b => {
+                (b.units || []).forEach(u => {
+                    // Rents
+                    if (u.status === 'alugado' && u.rentValue > 0) {
+                        if (!u.rentStartDate) {
+                            monthRent += u.rentValue; // Legacy data without start date
+                        } else {
+                            const start = new Date(u.rentStartDate + 'T12:00:00Z');
+                            const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+                            if (d >= startMonth) {
+                                monthRent += u.rentValue;
+                            }
+                        }
+                    }
+                    
+                    // Installments
+                    if (u.status === 'vendido' && u.saleValue > 0 && u.installmentCount > 0) {
+                        const downPay = u.downPayment || 0;
+                        const financed = u.saleValue - downPay;
+                        const installmentVal = financed / u.installmentCount;
+                        
+                        if (u.installmentStartDate) {
+                            const start = new Date(u.installmentStartDate + 'T12:00:00Z');
+                            const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+                            const endMonth = new Date(start.getFullYear(), start.getMonth() + u.installmentCount, 1);
+                            
+                            if (d >= startMonth && d < endMonth) {
+                                monthInstallments += installmentVal;
+                            }
+                        }
                     }
                 });
-                historicalData.push(monthTotal);
-                projectionData.push(null);
+            });
+
+            rentData.push(monthRent);
+            installmentsData.push(monthInstallments);
+
+            const totalMonth = monthRent + monthInstallments;
+
+            if (i === 0) kpiThisMonth = totalMonth;
+            if (i === 1) kpiLastMonth = totalMonth;
+            if (d.getFullYear() === today.getFullYear()) kpiYTD += totalMonth;
+        }
+
+        // Update KPIs
+        const elThis = document.getElementById('kpi-this-month');
+        const elLast = document.getElementById('kpi-last-month');
+        const elMom = document.getElementById('kpi-mom-change');
+        const elYtd = document.getElementById('kpi-ytd');
+
+        if (elThis) elThis.textContent = formatCurrency(kpiThisMonth);
+        if (elLast) elLast.textContent = formatCurrency(kpiLastMonth);
+        if (elYtd) elYtd.textContent = formatCurrency(kpiYTD);
+
+        if (elMom) {
+            if (kpiLastMonth > 0) {
+                const diff = ((kpiThisMonth - kpiLastMonth) / kpiLastMonth) * 100;
+                const sign = diff > 0 ? '+' : '';
+                const color = diff > 0 ? 'var(--accent-green)' : (diff < 0 ? 'var(--accent-red)' : 'var(--text-secondary)');
+                elMom.textContent = `${sign}${diff.toFixed(1)}%`;
+                elMom.style.color = color;
+            } else if (kpiThisMonth > 0 && kpiLastMonth === 0) {
+                elMom.textContent = '+100%';
+                elMom.style.color = 'var(--accent-green)';
             } else {
-                // Future: project with current total rent
-                historicalData.push(null);
-                projectionData.push(currentMonthlyRent);
+                elMom.textContent = '0%';
+                elMom.style.color = 'var(--text-secondary)';
             }
         }
 
-        // Bridge: connect historical to projection by adding current rent to projection at split point
-        const splitIndex = MONTHS_BACK; // index of current month
-        if (historicalData[splitIndex] !== null) {
-            projectionData[splitIndex] = historicalData[splitIndex];
-        }
-
-        // Accumulated data
-        let accum = 0;
-        const accumulatedData = [];
-        for (let i = 0; i < totalMonths; i++) {
-            const val = historicalData[i] !== null ? historicalData[i] : projectionData[i];
-            accum += (val || 0);
-            accumulatedData.push(accum);
+        if (rentalChartObj) {
+            rentalChartObj.destroy();
         }
 
         const chartConfig = {
@@ -1725,89 +1744,77 @@ document.addEventListener('DOMContentLoaded', async () => {
                 labels,
                 datasets: [
                     {
-                        label: 'Receita Histórica',
-                        data: historicalData,
-                        backgroundColor: 'rgba(0, 200, 83, 0.6)',
+                        label: 'Aluguéis',
+                        data: rentData,
+                        backgroundColor: 'rgba(0, 200, 83, 0.7)',
                         borderColor: '#00C853',
                         borderWidth: 1,
-                        borderRadius: 4,
-                        order: 2
+                        borderRadius: 4
                     },
                     {
-                        label: 'Projeção Futura',
-                        data: projectionData,
-                        backgroundColor: 'rgba(41, 98, 255, 0.35)',
-                        borderColor: '#2962FF',
+                        label: 'Parcelas (Vendas)',
+                        data: installmentsData,
+                        backgroundColor: 'rgba(255, 160, 0, 0.7)',
+                        borderColor: '#FFA000',
                         borderWidth: 1,
-                        borderRadius: 4,
-                        borderDash: [4, 4],
-                        order: 2
-                    },
-                    {
-                        label: 'Acumulado',
-                        data: accumulatedData,
-                        type: 'line',
-                        borderColor: '#FFD54F',
-                        backgroundColor: 'rgba(255, 213, 79, 0.08)',
-                        borderWidth: 2,
-                        pointRadius: 0,
-                        pointHoverRadius: 4,
-                        tension: 0.3,
-                        fill: true,
-                        yAxisID: 'yAccum',
-                        order: 1
+                        borderRadius: 4
                     }
                 ]
             },
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                interaction: {
-                    mode: 'index',
-                    intersect: false
+                scales: {
+                    x: {
+                        stacked: true,
+                        grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+                        ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 11 } }
+                    },
+                    y: {
+                        stacked: true,
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+                        ticks: {
+                            color: 'rgba(255,255,255,0.5)',
+                            callback: function(value) { return 'R$ ' + (value/1000) + 'k'; },
+                            font: { size: 11 }
+                        }
+                    }
                 },
                 plugins: {
                     legend: {
                         position: 'top',
-                        labels: {
-                            color: 'rgba(255,255,255,0.7)',
-                            padding: 16,
-                            usePointStyle: true,
-                            pointStyleWidth: 10,
-                            font: { size: 11 }
-                        }
+                        labels: { color: 'rgba(255,255,255,0.7)', usePointStyle: true, pointStyleWidth: 10 }
                     },
                     tooltip: {
+                        mode: 'index',
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleColor: 'rgba(255,255,255,0.9)',
+                        bodyColor: 'rgba(255,255,255,0.8)',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        padding: 12,
                         callbacks: {
-                            label: (c) => `${c.dataset.label}: ${formatCurrency(c.raw)}`
+                            label: function(context) {
+                                return context.dataset.label + ': ' + formatCurrency(context.raw);
+                            }
                         }
-                    }
-                },
-                scales: {
-                    y: {
-                        beginAtZero: true,
-                        ticks: {
-                            callback: (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumSignificantDigits: 3 }).format(val),
-                            color: 'rgba(255,255,255,0.5)'
-                        },
-                        grid: { color: 'rgba(255,255,255,0.05)' }
-                    },
-                    yAccum: {
-                        position: 'right',
-                        beginAtZero: true,
-                        ticks: {
-                            callback: (val) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL', notation: 'compact', maximumSignificantDigits: 3 }).format(val),
-                            color: 'rgba(255, 213, 79, 0.5)'
-                        },
-                        grid: { display: false }
-                    },
-                    x: {
-                        ticks: { color: 'rgba(255,255,255,0.5)', maxRotation: 45 },
-                        grid: { display: false }
                     }
                 }
             }
         };
+
+        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        if (theme === 'light') {
+            chartConfig.options.scales.x.grid.color = 'rgba(0,0,0,0.05)';
+            chartConfig.options.scales.x.ticks.color = 'rgba(0,0,0,0.5)';
+            chartConfig.options.scales.y.grid.color = 'rgba(0,0,0,0.05)';
+            chartConfig.options.scales.y.ticks.color = 'rgba(0,0,0,0.5)';
+            chartConfig.options.plugins.legend.labels.color = 'rgba(0,0,0,0.7)';
+            chartConfig.options.plugins.tooltip.backgroundColor = 'rgba(255,255,255,0.9)';
+            chartConfig.options.plugins.tooltip.titleColor = 'rgba(0,0,0,0.8)';
+            chartConfig.options.plugins.tooltip.bodyColor = 'rgba(0,0,0,0.7)';
+        }
 
         if (rentalChartObj) {
             rentalChartObj.data = chartConfig.data;
