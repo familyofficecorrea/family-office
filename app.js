@@ -1695,7 +1695,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         let kpiThisMonth = 0;
         let kpiLastMonth = 0;
-        let kpiYTD = 0;
+        let kpiYTD_Rent = 0;
+        let kpiYTD_Inst = 0;
 
         // KPI calculation is always monthly
         for (let i = 11; i >= 0; i--) {
@@ -1705,7 +1706,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             if (i === 0) kpiThisMonth = totalMonth;
             if (i === 1) kpiLastMonth = totalMonth;
-            if (d.getFullYear() === today.getFullYear()) kpiYTD += totalMonth;
+            if (d.getFullYear() === today.getFullYear()) {
+                kpiYTD_Rent += revs.mRent;
+                kpiYTD_Inst += revs.mInst;
+            }
         }
 
         if (window._chartTimeframe === '12m') {
@@ -1759,7 +1763,14 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (elThis) elThis.textContent = formatCurrency(kpiThisMonth);
         if (elLast) elLast.textContent = formatCurrency(kpiLastMonth);
-        if (elYtd) elYtd.textContent = formatCurrency(kpiYTD);
+        
+        if (elYtd) {
+            const totalYtd = kpiYTD_Rent + kpiYTD_Inst;
+            elYtd.innerHTML = `<div style="font-size: 11px; font-weight: normal; color: var(--text-secondary); margin-bottom: 2px;">
+                Aluguel (${formatCurrency(kpiYTD_Rent)}) + Venda (${formatCurrency(kpiYTD_Inst)})
+            </div>
+            <div>${formatCurrency(totalYtd)}</div>`;
+        }
 
         if (elMom) {
             if (kpiLastMonth > 0) {
@@ -1768,11 +1779,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const color = diff > 0 ? 'var(--accent-green)' : (diff < 0 ? 'var(--accent-red)' : 'var(--text-secondary)');
                 elMom.textContent = `${sign}${diff.toFixed(1)}%`;
                 elMom.style.color = color;
-            } else if (kpiThisMonth > 0 && kpiLastMonth === 0) {
-                elMom.textContent = '+100%';
-                elMom.style.color = 'var(--accent-green)';
             } else {
-                elMom.textContent = '0%';
+                elMom.textContent = '-';
                 elMom.style.color = 'var(--text-secondary)';
             }
         }
@@ -2013,7 +2021,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         pointHoverRadius: 6,
                         tension: 0.3,
                         fill: true,
-                        yAxisID: 'yAccum',
                         order: 1
                     }
                 ]
@@ -2058,16 +2065,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                             callback: function(value) { return 'R$ ' + (value/1000) + 'k'; },
                             font: { size: 11 }
                         }
-                    },
-                    yAccum: {
-                        position: 'right',
-                        beginAtZero: true,
-                        grid: { display: false },
-                        ticks: {
-                            color: 'rgba(0, 200, 83, 0.5)',
-                            callback: function(value) { return 'R$ ' + (value/1000) + 'k'; },
-                            font: { size: 11 }
-                        }
                     }
                 }
             }
@@ -2079,7 +2076,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             chartConfig.options.scales.x.ticks.color = 'rgba(0,0,0,0.5)';
             chartConfig.options.scales.y.grid.color = 'rgba(0,0,0,0.05)';
             chartConfig.options.scales.y.ticks.color = 'rgba(0,0,0,0.5)';
-            chartConfig.options.scales.yAccum.ticks.color = 'rgba(0, 200, 83, 0.8)';
             chartConfig.options.plugins.legend.labels.color = 'rgba(0,0,0,0.7)';
             chartConfig.options.plugins.tooltip.backgroundColor = 'rgba(255,255,255,0.9)';
             chartConfig.options.plugins.tooltip.titleColor = 'rgba(0,0,0,0.8)';
