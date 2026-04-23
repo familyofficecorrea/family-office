@@ -1445,6 +1445,117 @@ body {
     background: rgba(255, 61, 87, 0.1);
 }
 
+/* --- Installment Info on Unit Cards --- */
+.unit-installment-info {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+}
+
+.unit-installment-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 8px;
+}
+
+.unit-installment-label {
+    font-size: 11px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.unit-installment-count {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text-primary);
+    background: rgba(255, 255, 255, 0.06);
+    padding: 2px 8px;
+    border-radius: 10px;
+}
+
+.unit-installment-bar {
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    overflow: hidden;
+    margin-bottom: 8px;
+}
+
+.unit-installment-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--accent-green), #4CAF50);
+    border-radius: 3px;
+    transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+    min-width: 0;
+}
+
+.unit-installment-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.unit-installment-received {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--accent-green);
+}
+
+.unit-installment-pending {
+    font-size: 10px;
+    font-weight: 600;
+    color: #FFA000;
+}
+
+/* Light Theme: installment info adjustments */
+[data-theme="light"] .unit-installment-info {
+    background: rgba(0, 0, 0, 0.02);
+    border-color: rgba(0, 0, 0, 0.06);
+}
+
+[data-theme="light"] .unit-installment-count {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+[data-theme="light"] .unit-installment-bar {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+/* --- Installment Calculation Preview (Edit Modal) --- */
+.installment-calc-preview {
+    background: rgba(255, 165, 0, 0.06);
+    border: 1px solid rgba(255, 165, 0, 0.15);
+    border-radius: 10px;
+    padding: 14px 16px;
+    margin-bottom: 16px;
+    animation: fadeIn 0.3s ease;
+}
+
+.installment-calc-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+}
+
+.installment-calc-label {
+    font-size: 13px;
+    color: var(--text-secondary);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+}
+
+.installment-calc-value {
+    font-size: 14px;
+    font-weight: 700;
+    color: #FFA000;
+}
+
 /* --- Modal Overlay (reused) --- */
 .modal-overlay {
     position: fixed;

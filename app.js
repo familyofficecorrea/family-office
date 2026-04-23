@@ -1343,6 +1343,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit-unit-rent-start').value = unit.rentStartDate || '';
         document.getElementById('edit-unit-sale').value = unit.saleValue || '';
         document.getElementById('edit-unit-sale-date').value = unit.saleDate || '';
+        document.getElementById('edit-unit-downpayment').value = unit.downPayment || '';
+        document.getElementById('edit-unit-installment-count').value = unit.installmentCount || '';
+        document.getElementById('edit-unit-installment-start').value = unit.installmentStartDate || '';
+        document.getElementById('edit-unit-paid-installments').value = unit.paidInstallments || '';
         document.getElementById('edit-unit-notes').value = unit.notes || '';
         document.getElementById('edit-unit-title').textContent = `Editar ${unit.label}`;
 
@@ -1352,6 +1356,22 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit-unit-rent-start-group').style.display = (status === 'alugado') ? 'block' : 'none';
         document.getElementById('edit-unit-sale-group').style.display = (status === 'vendido') ? 'block' : 'none';
         document.getElementById('edit-unit-sale-date-group').style.display = (status === 'vendido') ? 'block' : 'none';
+        document.getElementById('edit-unit-downpayment-group').style.display = (status === 'vendido') ? 'block' : 'none';
+        document.getElementById('edit-unit-installments-group').style.display = (status === 'vendido') ? 'block' : 'none';
+        document.getElementById('edit-unit-installment-start-group').style.display = (status === 'vendido') ? 'block' : 'none';
+        document.getElementById('edit-unit-paid-group').style.display = (status === 'vendido') ? 'block' : 'none';
+
+        // Show installment preview if data exists
+        const preview = document.getElementById('edit-unit-installment-preview');
+        if (status === 'vendido' && unit.saleValue && unit.installmentCount) {
+            const financed = (unit.saleValue || 0) - (unit.downPayment || 0);
+            const installmentVal = financed / unit.installmentCount;
+            document.getElementById('edit-unit-installment-value').textContent = formatCurrency(installmentVal);
+            document.getElementById('edit-unit-financed-value').textContent = formatCurrency(financed);
+            preview.style.display = 'block';
+        } else {
+            preview.style.display = (status === 'vendido') ? 'block' : 'none';
+        }
 
         document.getElementById('modal-edit-unit').classList.add('visible');
     };
@@ -1380,12 +1400,26 @@ document.addEventListener('DOMContentLoaded', async () => {
         const totalRent = units.filter(u => u.status === 'alugado').reduce((s, u) => s + (u.rentValue || 0), 0);
         const totalSales = units.filter(u => u.status === 'vendido').reduce((s, u) => s + (u.saleValue || 0), 0);
 
+        // Installment receivables calculation
+        let totalReceived = 0;
+        let totalPending = 0;
+        units.filter(u => u.status === 'vendido').forEach(u => {
+            const downPay = u.downPayment || 0;
+            const count = u.installmentCount || 0;
+            const paid = u.paidInstallments || 0;
+            const financed = (u.saleValue || 0) - downPay;
+            const installmentVal = count > 0 ? financed / count : 0;
+            const receivedFromInstallments = paid * installmentVal;
+            totalReceived += downPay + receivedFromInstallments;
+            totalPending += (count - paid) * installmentVal;
+        });
+
         let barClass = 'occupancy-low';
         if (pct >= 90) barClass = 'occupancy-full';
         else if (pct >= 60) barClass = 'occupancy-high';
         else if (pct >= 30) barClass = 'occupancy-medium';
 
-        return { total, rented, sold, available, occupied, pct, barClass, totalRent, totalSales };
+        return { total, rented, sold, available, occupied, pct, barClass, totalRent, totalSales, totalReceived, totalPending };
     }
 
     function renderBuildingCard(building) {
@@ -1484,6 +1518,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <h2 style="color: var(--accent-green);">${formatCurrency(info.totalRent)}</h2>
                 </div>
             </div>
+            <div class="card">
+                <div class="card-icon" style="background-color: rgba(255,165,0,0.1); color: #FFA000;"><i class="fa-solid fa-file-invoice-dollar"></i></div>
+                <div class="card-info">
+                    <h3>A Receber (Parcelas)</h3>
+                    <h2 style="color: #FFA000;">${formatCurrency(info.totalPending)} <span style="font-size: 14px; font-weight: 400; color: var(--text-secondary);">de ${formatCurrency(info.totalSales)}</span></h2>
+                </div>
+            </div>
         `;
 
         // Units grid
@@ -1504,7 +1545,34 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (u.status === 'alugado' && u.rentValue) {
                 valueHtml = `<div class="unit-card-value rent">${formatCurrency(u.rentValue)}/mês</div>`;
             } else if (u.status === 'vendido' && u.saleValue) {
-                valueHtml = `<div class="unit-card-value sale">${formatCurrency(u.saleValue)}</div>`;
+                const downPay = u.downPayment || 0;
+                const count = u.installmentCount || 0;
+                const paid = u.paidInstallments || 0;
+                const financed = u.saleValue - downPay;
+                const installmentVal = count > 0 ? financed / count : 0;
+                const pctPaid = count > 0 ? Math.round((paid / count) * 100) : 0;
+                const totalRecv = downPay + (paid * installmentVal);
+
+                if (count > 0) {
+                    valueHtml = `
+                        <div class="unit-card-value sale">${formatCurrency(u.saleValue)}</div>
+                        <div class="unit-installment-info">
+                            <div class="unit-installment-header">
+                                <span class="unit-installment-label">Entrada: ${formatCurrency(downPay)}</span>
+                                <span class="unit-installment-count">${paid}/${count} parcelas</span>
+                            </div>
+                            <div class="unit-installment-bar">
+                                <div class="unit-installment-bar-fill" style="width: ${pctPaid}%"></div>
+                            </div>
+                            <div class="unit-installment-footer">
+                                <span class="unit-installment-received"><i class="fa-solid fa-check-circle" style="margin-right:3px;"></i>Recebido: ${formatCurrency(totalRecv)}</span>
+                                <span class="unit-installment-pending">Restante: ${formatCurrency(financed - (paid * installmentVal))}</span>
+                            </div>
+                        </div>
+                    `;
+                } else {
+                    valueHtml = `<div class="unit-card-value sale">${formatCurrency(u.saleValue)}</div>`;
+                }
             } else {
                 valueHtml = `<div class="unit-card-value empty">—</div>`;
             }
@@ -1857,6 +1925,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             unit.rentStartDate = document.getElementById('edit-unit-rent-start').value || '';
             unit.saleValue = parseFloat(document.getElementById('edit-unit-sale').value) || 0;
             unit.saleDate = document.getElementById('edit-unit-sale-date').value || '';
+            unit.downPayment = parseFloat(document.getElementById('edit-unit-downpayment').value) || 0;
+            unit.installmentCount = parseInt(document.getElementById('edit-unit-installment-count').value) || 0;
+            unit.installmentStartDate = document.getElementById('edit-unit-installment-start').value || '';
+            unit.paidInstallments = parseInt(document.getElementById('edit-unit-paid-installments').value) || 0;
             unit.notes = document.getElementById('edit-unit-notes').value.trim();
 
             saveRealEstate();
