@@ -1836,16 +1836,33 @@ document.addEventListener('DOMContentLoaded', async () => {
         const ctx = document.getElementById('salesGrowthChart');
         if (!ctx) return;
 
-        const MONTHS_BACK = 11;
         const today = new Date();
         
+        let minDate = new Date(today.getFullYear(), today.getMonth() - 11, 1);
+
+        // Find the oldest sale date
+        real_estate.forEach(b => {
+            (b.units || []).forEach(u => {
+                if (u.status === 'vendido' && u.saleValue > 0 && u.saleDate) {
+                    const saleD = new Date(u.saleDate + 'T12:00:00Z');
+                    const saleMonth = new Date(saleD.getFullYear(), saleD.getMonth(), 1);
+                    if (saleMonth < minDate) {
+                        minDate = saleMonth;
+                    }
+                }
+            });
+        });
+
+        const rawMonthsBack = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth());
+        const MONTHS_BACK = Math.max(0, Math.min(rawMonthsBack, 120)); // Limit to 10 years max
+
         const labels = [];
         const salesData = [];
         const accumData = [];
         
         let accumulatedSales = 0;
 
-        // We need the total accumulated sales UP TO the start of our 11-month window
+        // Total accumulated sales BEFORE our window (if any sale is older than 10 years)
         const startDate = new Date(today.getFullYear(), today.getMonth() - MONTHS_BACK, 1);
         
         real_estate.forEach(b => {
