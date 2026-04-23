@@ -1406,12 +1406,17 @@ document.addEventListener('DOMContentLoaded', async () => {
         const available = units.filter(u => u.status === 'disponivel').length;
         const occupied = rented + sold;
         const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
-        const totalRent = units.filter(u => u.status === 'alugado').reduce((s, u) => s + (u.rentValue || 0), 0);
+        const todayStr = new Date().toISOString().split('T')[0];
+        const totalRent = units.filter(u => u.status === 'alugado').reduce((s, u) => {
+            if (u.rentStartDate && u.rentStartDate > todayStr) return s;
+            return s + (u.rentValue || 0);
+        }, 0);
         const totalSales = units.filter(u => u.status === 'vendido').reduce((s, u) => s + (u.saleValue || 0), 0);
 
         // Installment receivables calculation
         let totalReceived = 0;
         let totalPending = 0;
+        let totalMonthlyInstallments = 0;
         units.filter(u => u.status === 'vendido').forEach(u => {
             const downPay = u.downPayment || 0;
             const count = u.installmentCount || 0;
@@ -1421,6 +1426,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             const receivedFromInstallments = paid * installmentVal;
             totalReceived += downPay + receivedFromInstallments;
             totalPending += (count - paid) * installmentVal;
+            
+            if (count > 0 && paid < count) {
+                if (!u.installmentStartDate || u.installmentStartDate <= todayStr) {
+                    totalMonthlyInstallments += installmentVal;
+                }
+            }
         });
 
         let barClass = 'occupancy-low';
@@ -1428,7 +1439,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         else if (pct >= 60) barClass = 'occupancy-high';
         else if (pct >= 30) barClass = 'occupancy-medium';
 
-        return { total, rented, sold, available, occupied, pct, barClass, totalRent, totalSales, totalReceived, totalPending };
+        return { total, rented, sold, available, occupied, pct, barClass, totalRent, totalSales, totalReceived, totalPending, totalMonthlyInstallments };
     }
 
     function renderBuildingCard(building) {
@@ -1479,8 +1490,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 
                 <div class="building-card-footer">
                     <div class="building-revenue">
-                        <span class="building-revenue-label">Renda Mensal</span>
-                        <span class="building-revenue-value">${formatCurrency(info.totalRent)}</span>
+                        <span class="building-revenue-label">Renda Mensal (Alug.+Parc.)</span>
+                        <span class="building-revenue-value">${formatCurrency(info.totalRent + info.totalMonthlyInstallments)}</span>
                     </div>
                     ${info.totalSales > 0 ? `
                     <div class="building-revenue">
@@ -1523,8 +1534,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             <div class="card">
                 <div class="card-icon"><i class="fa-solid fa-coins"></i></div>
                 <div class="card-info">
-                    <h3>Renda Mensal</h3>
-                    <h2 style="color: var(--accent-green);">${formatCurrency(info.totalRent)}</h2>
+                    <h3>Renda Mensal Ativa</h3>
+                    <h2 style="color: var(--accent-green);">${formatCurrency(info.totalRent + info.totalMonthlyInstallments)}</h2>
                 </div>
             </div>
             <div class="card">
@@ -1603,12 +1614,13 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     function updateRealEstateSummary() {
-        let totalUnits = 0, totalRent = 0, totalSales = 0;
+        let totalUnits = 0, totalRent = 0, totalSales = 0, totalMonthlyInstallments = 0;
         real_estate.forEach(b => {
             const info = getOccupancyInfo(b);
             totalUnits += info.total;
             totalRent += info.totalRent;
             totalSales += info.totalSales;
+            totalMonthlyInstallments += info.totalMonthlyInstallments;
         });
 
         const unitsEl = document.getElementById('re-total-units');
@@ -1616,12 +1628,12 @@ document.addEventListener('DOMContentLoaded', async () => {
         const salesEl = document.getElementById('re-total-sales');
 
         if (unitsEl) unitsEl.textContent = totalUnits;
-        if (rentEl) rentEl.textContent = formatCurrency(totalRent);
+        if (rentEl) rentEl.textContent = formatCurrency(totalRent + totalMonthlyInstallments);
         if (salesEl) salesEl.textContent = formatCurrency(totalSales);
 
         // Update Visão Geral revenue card (reuse existing RE summary element)
         const revEl = document.getElementById('re-monthly-revenue');
-        if (revEl) revEl.innerText = formatCurrency(totalRent);
+        if (revEl) revEl.innerText = formatCurrency(totalRent + totalMonthlyInstallments);
     }
 
     // ─── Rental Income Chart (Historical + Projection) ───────────────────────
