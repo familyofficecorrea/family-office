@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css?v=2.9">
+    <link rel="stylesheet" href="style.css?v=2.10">
 </head>
 <body>
     <div class="dashboard-container">
@@ -348,8 +348,12 @@
 
                 <!-- Rental Income & Sales Charts -->
                 <section class="chart-section glass-panel" style="margin-top: 32px; padding: 24px;">
-                    <div class="section-header" style="margin-bottom: 24px;">
-                        <h2><i class="fa-solid fa-chart-line" style="margin-right: 8px; color: var(--accent-green);"></i>Performance Mensal</h2>
+                    <div class="section-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
+                        <h2><i class="fa-solid fa-chart-line" style="margin-right: 8px; color: var(--accent-green);"></i>Performance</h2>
+                        <div class="detail-panel-filters" style="margin-bottom: 0;">
+                            <button class="btn-filter active" data-chart-timeframe="12m" onclick="window.setChartTimeframe('12m', this)">12 Meses</button>
+                            <button class="btn-filter" data-chart-timeframe="12y" onclick="window.setChartTimeframe('12y', this)">Histórico (Anos)</button>
+                        </div>
                     </div>
                     
                     <!-- KPIs -->
@@ -626,6 +630,6 @@
         document.getElementById('edit-unit-installment-count').addEventListener('input', updateInstallmentPreview);
     </script>
     <!-- Custom Script -->
-    <script src="app.js?v=2.9"></script>
+    <script src="app.js?v=2.10"></script>
 </body>
 </html>

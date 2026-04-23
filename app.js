@@ -1636,7 +1636,47 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (revEl) revEl.innerText = formatCurrency(totalRent + totalMonthlyInstallments);
     }
 
-    // ─── Rental Income Chart (Historical + Projection) ───────────────────────
+    // ─── Rental Income Chart & Timeframe Filter ──────────────────────────────
+    window._chartTimeframe = '12m';
+
+    window.setChartTimeframe = (tf, btn) => {
+        window._chartTimeframe = tf;
+        const buttons = btn.parentElement.querySelectorAll('.btn-filter');
+        buttons.forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        renderRentalIncomeChart();
+        renderSalesGrowthChart();
+    };
+
+    function calcMonthRevs(d) {
+        let mRent = 0;
+        let mInst = 0;
+        real_estate.forEach(b => {
+            (b.units || []).forEach(u => {
+                if (u.status === 'alugado' && u.rentValue > 0) {
+                    if (!u.rentStartDate) mRent += u.rentValue;
+                    else {
+                        const start = new Date(u.rentStartDate + 'T12:00:00Z');
+                        const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+                        if (d >= startMonth) mRent += u.rentValue;
+                    }
+                }
+                if (u.status === 'vendido' && u.saleValue > 0 && u.installmentCount > 0) {
+                    const downPay = u.downPayment || 0;
+                    const financed = u.saleValue - downPay;
+                    const installmentVal = financed / u.installmentCount;
+                    if (u.installmentStartDate) {
+                        const start = new Date(u.installmentStartDate + 'T12:00:00Z');
+                        const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+                        const endMonth = new Date(start.getFullYear(), start.getMonth() + u.installmentCount, 1);
+                        if (d >= startMonth && d < endMonth) mInst += installmentVal;
+                    }
+                }
+            });
+        });
+        return { mRent, mInst };
+    }
+
     let rentalChartObj = null;
 
     function renderRentalIncomeChart() {
@@ -1644,9 +1684,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!ctx) return;
 
         // Configuration
-        const MONTHS_BACK = 11;
         const today = new Date();
-        
         const labels = [];
         const rentData = [];
         const installmentsData = [];
@@ -1655,61 +1693,58 @@ document.addEventListener('DOMContentLoaded', async () => {
         let kpiLastMonth = 0;
         let kpiYTD = 0;
 
-        for (let i = MONTHS_BACK; i >= 0; i--) {
+        // KPI calculation is always monthly
+        for (let i = 11; i >= 0; i--) {
             const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const revs = calcMonthRevs(d);
+            const totalMonth = revs.mRent + revs.mInst;
+            
+            if (i === 0) kpiThisMonth = totalMonth;
+            if (i === 1) kpiLastMonth = totalMonth;
+            if (d.getFullYear() === today.getFullYear()) kpiYTD += totalMonth;
+        }
 
-            let monthRent = 0;
-            let monthInstallments = 0;
-
-            // Calculate revenues for this specific month
+        if (window._chartTimeframe === '12m') {
+            const MONTHS_BACK = 11;
+            for (let i = MONTHS_BACK; i >= 0; i--) {
+                const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                
+                const april2026 = new Date(2026, 3, 1);
+                if (d >= april2026) {
+                    const monthStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
+                    labels.push(monthStr);
+                    const revs = calcMonthRevs(d);
+                    rentData.push(revs.mRent);
+                    installmentsData.push(revs.mInst);
+                }
+            }
+        } else {
+            // '12y' timeframe
+            let minYear = today.getFullYear() - 11; 
+            
             real_estate.forEach(b => {
                 (b.units || []).forEach(u => {
-                    // Rents
-                    if (u.status === 'alugado' && u.rentValue > 0) {
-                        if (!u.rentStartDate) {
-                            monthRent += u.rentValue; // Legacy data without start date
-                        } else {
-                            const start = new Date(u.rentStartDate + 'T12:00:00Z');
-                            const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
-                            if (d >= startMonth) {
-                                monthRent += u.rentValue;
-                            }
-                        }
-                    }
-                    
-                    // Installments
-                    if (u.status === 'vendido' && u.saleValue > 0 && u.installmentCount > 0) {
-                        const downPay = u.downPayment || 0;
-                        const financed = u.saleValue - downPay;
-                        const installmentVal = financed / u.installmentCount;
-                        
-                        if (u.installmentStartDate) {
-                            const start = new Date(u.installmentStartDate + 'T12:00:00Z');
-                            const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
-                            const endMonth = new Date(start.getFullYear(), start.getMonth() + u.installmentCount, 1);
-                            
-                            if (d >= startMonth && d < endMonth) {
-                                monthInstallments += installmentVal;
-                            }
-                        }
+                    if (u.rentStartDate) {
+                        const y = new Date(u.rentStartDate + 'T12:00:00Z').getFullYear();
+                        if (y < minYear && y >= today.getFullYear() - 11) minYear = y;
                     }
                 });
             });
 
-            const totalMonth = monthRent + monthInstallments;
-
-            // Only add to chart if date is April 2026 (Month 3 in JS, since Jan is 0) or later
-            const april2026 = new Date(2026, 3, 1);
-            if (d >= april2026) {
-                const monthStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
-                labels.push(monthStr);
-                rentData.push(monthRent);
-                installmentsData.push(monthInstallments);
+            for (let y = minYear; y <= today.getFullYear(); y++) {
+                labels.push(y.toString());
+                let yearRent = 0;
+                let yearInst = 0;
+                for (let m = 0; m < 12; m++) {
+                    const d = new Date(y, m, 1);
+                    if (d > today) break;
+                    const revs = calcMonthRevs(d);
+                    yearRent += revs.mRent;
+                    yearInst += revs.mInst;
+                }
+                rentData.push(yearRent);
+                installmentsData.push(yearInst);
             }
-
-            if (i === 0) kpiThisMonth = totalMonth;
-            if (i === 1) kpiLastMonth = totalMonth;
-            if (d.getFullYear() === today.getFullYear()) kpiYTD += totalMonth;
         }
 
         // Update KPIs
@@ -1837,66 +1872,111 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!ctx) return;
 
         const today = new Date();
-        
-        let minDate = new Date(today.getFullYear(), today.getMonth() - 11, 1);
-
-        // Find the oldest sale date
-        real_estate.forEach(b => {
-            (b.units || []).forEach(u => {
-                if (u.status === 'vendido' && u.saleValue > 0 && u.saleDate) {
-                    const saleD = new Date(u.saleDate + 'T12:00:00Z');
-                    const saleMonth = new Date(saleD.getFullYear(), saleD.getMonth(), 1);
-                    if (saleMonth < minDate) {
-                        minDate = saleMonth;
-                    }
-                }
-            });
-        });
-
-        const rawMonthsBack = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth());
-        const MONTHS_BACK = Math.max(0, Math.min(rawMonthsBack, 120)); // Limit to 10 years max
-
         const labels = [];
         const salesData = [];
         const accumData = [];
         
         let accumulatedSales = 0;
 
-        // Total accumulated sales BEFORE our window (if any sale is older than 10 years)
-        const startDate = new Date(today.getFullYear(), today.getMonth() - MONTHS_BACK, 1);
-        
-        real_estate.forEach(b => {
-            (b.units || []).forEach(u => {
-                if (u.status === 'vendido' && u.saleValue > 0 && u.saleDate) {
-                    const saleD = new Date(u.saleDate + 'T12:00:00Z');
-                    if (saleD < startDate) {
-                        accumulatedSales += u.saleValue;
-                    }
-                }
-            });
-        });
-
-        for (let i = MONTHS_BACK; i >= 0; i--) {
-            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            const monthStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
-            labels.push(monthStr);
-
-            let monthSales = 0;
+        if (window._chartTimeframe === '12m') {
+            let minDate = new Date(today.getFullYear(), today.getMonth() - 11, 1);
 
             real_estate.forEach(b => {
                 (b.units || []).forEach(u => {
                     if (u.status === 'vendido' && u.saleValue > 0 && u.saleDate) {
                         const saleD = new Date(u.saleDate + 'T12:00:00Z');
-                        if (saleD.getFullYear() === d.getFullYear() && saleD.getMonth() === d.getMonth()) {
-                            monthSales += u.saleValue;
+                        const saleMonth = new Date(saleD.getFullYear(), saleD.getMonth(), 1);
+                        if (saleMonth < minDate) {
+                            minDate = saleMonth;
                         }
                     }
                 });
             });
 
-            salesData.push(monthSales);
-            accumulatedSales += monthSales;
-            accumData.push(accumulatedSales);
+            const rawMonthsBack = (today.getFullYear() - minDate.getFullYear()) * 12 + (today.getMonth() - minDate.getMonth());
+            const MONTHS_BACK = Math.max(0, Math.min(rawMonthsBack, 120));
+
+            const startDate = new Date(today.getFullYear(), today.getMonth() - MONTHS_BACK, 1);
+            
+            real_estate.forEach(b => {
+                (b.units || []).forEach(u => {
+                    if (u.status === 'vendido' && u.saleValue > 0 && u.saleDate) {
+                        const saleD = new Date(u.saleDate + 'T12:00:00Z');
+                        if (saleD < startDate) {
+                            accumulatedSales += u.saleValue;
+                        }
+                    }
+                });
+            });
+
+            for (let i = MONTHS_BACK; i >= 0; i--) {
+                const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+                const monthStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
+                labels.push(monthStr);
+
+                let monthSales = 0;
+                real_estate.forEach(b => {
+                    (b.units || []).forEach(u => {
+                        if (u.status === 'vendido' && u.saleValue > 0 && u.saleDate) {
+                            const saleD = new Date(u.saleDate + 'T12:00:00Z');
+                            if (saleD.getFullYear() === d.getFullYear() && saleD.getMonth() === d.getMonth()) {
+                                monthSales += u.saleValue;
+                            }
+                        }
+                    });
+                });
+
+                salesData.push(monthSales);
+                accumulatedSales += monthSales;
+                accumData.push(accumulatedSales);
+            }
+        } else {
+            // '12y' timeframe
+            let minYear = today.getFullYear() - 11;
+            
+            real_estate.forEach(b => {
+                (b.units || []).forEach(u => {
+                    if (u.status === 'vendido' && u.saleValue > 0 && u.saleDate) {
+                        const saleY = new Date(u.saleDate + 'T12:00:00Z').getFullYear();
+                        if (saleY < minYear) minYear = saleY;
+                    }
+                });
+            });
+            
+            if (minYear < today.getFullYear() - 11) {
+                minYear = today.getFullYear() - 11;
+            }
+
+            real_estate.forEach(b => {
+                (b.units || []).forEach(u => {
+                    if (u.status === 'vendido' && u.saleValue > 0 && u.saleDate) {
+                        const saleY = new Date(u.saleDate + 'T12:00:00Z').getFullYear();
+                        if (saleY < minYear) {
+                            accumulatedSales += u.saleValue;
+                        }
+                    }
+                });
+            });
+
+            for (let y = minYear; y <= today.getFullYear(); y++) {
+                labels.push(y.toString());
+                
+                let yearSales = 0;
+                real_estate.forEach(b => {
+                    (b.units || []).forEach(u => {
+                        if (u.status === 'vendido' && u.saleValue > 0 && u.saleDate) {
+                            const saleY = new Date(u.saleDate + 'T12:00:00Z').getFullYear();
+                            if (saleY === y) {
+                                yearSales += u.saleValue;
+                            }
+                        }
+                    });
+                });
+
+                salesData.push(yearSales);
+                accumulatedSales += yearSales;
+                accumData.push(accumulatedSales);
+            }
         }
 
         if (salesChartObj) {
