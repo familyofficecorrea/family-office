@@ -1659,7 +1659,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             (b.units || []).forEach(u => {
                 if (u.status === 'alugado' && u.rentValue > 0) {
                     if (!u.rentStartDate) {
-                        // If no start date was set, default to April 2026 (when the system was started)
                         if (d >= defaultStartDate) mRent += u.rentValue;
                     } else {
                         const start = new Date(u.rentStartDate + 'T12:00:00Z');
@@ -1681,6 +1680,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         const saleD = new Date(u.saleDate + 'T12:00:00Z');
                         if (saleD.getFullYear() === d.getFullYear() && saleD.getMonth() === d.getMonth()) {
                             mSaleVolume += u.saleValue;
+                            
+                            // Adiciona a entrada (ou o valor total se for à vista) ao fluxo de caixa do mês da venda
+                            if (!u.installmentCount || u.installmentCount === 0) {
+                                mInst += u.saleValue;
+                            } else {
+                                mInst += (u.downPayment || 0);
+                            }
                         }
                     }
                 }
@@ -1716,7 +1722,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (i === 1) kpiLastMonth = totalMonth;
             if (d.getFullYear() === today.getFullYear()) {
                 kpiYTD_Rent += revs.mRent;
-                kpiYTD_Inst += revs.mSaleVolume; // Sum full sale volume instead of just installments for YTD
+                kpiYTD_Inst += revs.mInst; // Voltar a somar apenas o caixa real (entrada + parcelas) no YTD
             }
         }
 
@@ -1812,7 +1818,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                         borderRadius: 4
                     },
                     {
-                        label: 'Parcelas (Vendas)',
+                        label: 'Recebimentos (Vendas)',
                         data: installmentsData,
                         backgroundColor: 'rgba(255, 160, 0, 0.7)',
                         borderColor: '#FFA000',
