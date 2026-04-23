@@ -1736,6 +1736,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         if (rentalChartObj) {
             rentalChartObj.destroy();
+            rentalChartObj = null;
         }
 
         const chartConfig = {
