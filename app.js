@@ -1651,11 +1651,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     function calcMonthRevs(d) {
         let mRent = 0;
         let mInst = 0;
+        const defaultStartDate = new Date(2026, 3, 1); // April 2026
+
         real_estate.forEach(b => {
             (b.units || []).forEach(u => {
                 if (u.status === 'alugado' && u.rentValue > 0) {
-                    if (!u.rentStartDate) mRent += u.rentValue;
-                    else {
+                    if (!u.rentStartDate) {
+                        // If no start date was set, default to April 2026 (when the system was started)
+                        if (d >= defaultStartDate) mRent += u.rentValue;
+                    } else {
                         const start = new Date(u.rentStartDate + 'T12:00:00Z');
                         const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
                         if (d >= startMonth) mRent += u.rentValue;
