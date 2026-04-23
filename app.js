@@ -1657,8 +1657,6 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         for (let i = MONTHS_BACK; i >= 0; i--) {
             const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
-            const monthStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
-            labels.push(monthStr);
 
             let monthRent = 0;
             let monthInstallments = 0;
@@ -1698,10 +1696,16 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
             });
 
-            rentData.push(monthRent);
-            installmentsData.push(monthInstallments);
-
             const totalMonth = monthRent + monthInstallments;
+
+            // Only add to chart if date is April 2026 (Month 3 in JS, since Jan is 0) or later
+            const april2026 = new Date(2026, 3, 1);
+            if (d >= april2026) {
+                const monthStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
+                labels.push(monthStr);
+                rentData.push(monthRent);
+                installmentsData.push(monthInstallments);
+            }
 
             if (i === 0) kpiThisMonth = totalMonth;
             if (i === 1) kpiLastMonth = totalMonth;
@@ -1826,6 +1830,164 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    let salesChartObj = null;
+
+    function renderSalesGrowthChart() {
+        const ctx = document.getElementById('salesGrowthChart');
+        if (!ctx) return;
+
+        const MONTHS_BACK = 11;
+        const today = new Date();
+        
+        const labels = [];
+        const salesData = [];
+        const accumData = [];
+        
+        let accumulatedSales = 0;
+
+        // We need the total accumulated sales UP TO the start of our 11-month window
+        const startDate = new Date(today.getFullYear(), today.getMonth() - MONTHS_BACK, 1);
+        
+        real_estate.forEach(b => {
+            (b.units || []).forEach(u => {
+                if (u.status === 'vendido' && u.saleValue > 0 && u.saleDate) {
+                    const saleD = new Date(u.saleDate + 'T12:00:00Z');
+                    if (saleD < startDate) {
+                        accumulatedSales += u.saleValue;
+                    }
+                }
+            });
+        });
+
+        for (let i = MONTHS_BACK; i >= 0; i--) {
+            const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
+            const monthStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
+            labels.push(monthStr);
+
+            let monthSales = 0;
+
+            real_estate.forEach(b => {
+                (b.units || []).forEach(u => {
+                    if (u.status === 'vendido' && u.saleValue > 0 && u.saleDate) {
+                        const saleD = new Date(u.saleDate + 'T12:00:00Z');
+                        if (saleD.getFullYear() === d.getFullYear() && saleD.getMonth() === d.getMonth()) {
+                            monthSales += u.saleValue;
+                        }
+                    }
+                });
+            });
+
+            salesData.push(monthSales);
+            accumulatedSales += monthSales;
+            accumData.push(accumulatedSales);
+        }
+
+        if (salesChartObj) {
+            salesChartObj.destroy();
+            salesChartObj = null;
+        }
+
+        const chartConfig = {
+            type: 'bar',
+            data: {
+                labels,
+                datasets: [
+                    {
+                        label: 'Vendas no Mês',
+                        data: salesData,
+                        backgroundColor: 'rgba(41, 98, 255, 0.7)',
+                        borderColor: '#2962FF',
+                        borderWidth: 1,
+                        borderRadius: 4,
+                        order: 2
+                    },
+                    {
+                        label: 'Acumulado Total',
+                        data: accumData,
+                        type: 'line',
+                        borderColor: '#00C853',
+                        backgroundColor: 'rgba(0, 200, 83, 0.08)',
+                        borderWidth: 2,
+                        pointRadius: 3,
+                        pointHoverRadius: 6,
+                        tension: 0.3,
+                        fill: true,
+                        yAxisID: 'yAccum',
+                        order: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                interaction: {
+                    mode: 'index',
+                    intersect: false
+                },
+                plugins: {
+                    legend: {
+                        position: 'top',
+                        labels: { color: 'rgba(255,255,255,0.7)', usePointStyle: true, pointStyleWidth: 10 }
+                    },
+                    tooltip: {
+                        mode: 'index',
+                        backgroundColor: 'rgba(0,0,0,0.8)',
+                        titleColor: 'rgba(255,255,255,0.9)',
+                        bodyColor: 'rgba(255,255,255,0.8)',
+                        borderColor: 'rgba(255,255,255,0.1)',
+                        borderWidth: 1,
+                        padding: 12,
+                        callbacks: {
+                            label: function(context) {
+                                return context.dataset.label + ': ' + formatCurrency(context.raw);
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    x: {
+                        grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+                        ticks: { color: 'rgba(255,255,255,0.5)', font: { size: 11 } }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: 'rgba(255,255,255,0.05)', drawBorder: false },
+                        ticks: {
+                            color: 'rgba(255,255,255,0.5)',
+                            callback: function(value) { return 'R$ ' + (value/1000) + 'k'; },
+                            font: { size: 11 }
+                        }
+                    },
+                    yAccum: {
+                        position: 'right',
+                        beginAtZero: true,
+                        grid: { display: false },
+                        ticks: {
+                            color: 'rgba(0, 200, 83, 0.5)',
+                            callback: function(value) { return 'R$ ' + (value/1000) + 'k'; },
+                            font: { size: 11 }
+                        }
+                    }
+                }
+            }
+        };
+
+        const theme = document.documentElement.getAttribute('data-theme') || 'dark';
+        if (theme === 'light') {
+            chartConfig.options.scales.x.grid.color = 'rgba(0,0,0,0.05)';
+            chartConfig.options.scales.x.ticks.color = 'rgba(0,0,0,0.5)';
+            chartConfig.options.scales.y.grid.color = 'rgba(0,0,0,0.05)';
+            chartConfig.options.scales.y.ticks.color = 'rgba(0,0,0,0.5)';
+            chartConfig.options.scales.yAccum.ticks.color = 'rgba(0, 200, 83, 0.8)';
+            chartConfig.options.plugins.legend.labels.color = 'rgba(0,0,0,0.7)';
+            chartConfig.options.plugins.tooltip.backgroundColor = 'rgba(255,255,255,0.9)';
+            chartConfig.options.plugins.tooltip.titleColor = 'rgba(0,0,0,0.8)';
+            chartConfig.options.plugins.tooltip.bodyColor = 'rgba(0,0,0,0.7)';
+        }
+
+        salesChartObj = new Chart(ctx.getContext('2d'), chartConfig);
+    }
+
     window.updateRealEstateUI = () => {
         const grid = document.getElementById('re-buildings-grid');
         if (!grid) return;
@@ -1843,6 +2005,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         updateRealEstateSummary();
         renderRentalIncomeChart();
+        renderSalesGrowthChart();
 
         // If detail panel is open, refresh it too
         if (_currentBuildingId) {

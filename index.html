@@ -15,7 +15,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Custom CSS -->
-    <link rel="stylesheet" href="style.css?v=2.7">
+    <link rel="stylesheet" href="style.css?v=2.8">
 </head>
 <body>
     <div class="dashboard-container">
@@ -346,10 +346,10 @@
                     <div id="units-grid" class="units-grid"></div>
                 </div>
 
-                <!-- Rental Income Chart & Dashboard -->
+                <!-- Rental Income & Sales Charts -->
                 <section class="chart-section glass-panel" style="margin-top: 32px; padding: 24px;">
                     <div class="section-header" style="margin-bottom: 24px;">
-                        <h2><i class="fa-solid fa-chart-line" style="margin-right: 8px; color: var(--accent-green);"></i>Performance Mensal (Aluguéis e Parcelas)</h2>
+                        <h2><i class="fa-solid fa-chart-line" style="margin-right: 8px; color: var(--accent-green);"></i>Performance Mensal</h2>
                     </div>
                     
                     <!-- KPIs -->
@@ -380,8 +380,15 @@
                         </div>
                     </div>
 
-                    <div class="chart-container" style="height: 350px;">
-                        <canvas id="rentalIncomeChart"></canvas>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 24px;">
+                        <div class="chart-container" style="height: 350px;">
+                            <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text-secondary); text-align: center;">Evolução de Aluguéis e Parcelas</h3>
+                            <canvas id="rentalIncomeChart"></canvas>
+                        </div>
+                        <div class="chart-container" style="height: 350px;">
+                            <h3 style="font-size: 14px; margin-bottom: 12px; color: var(--text-secondary); text-align: center;">Crescimento de Vendas (R$)</h3>
+                            <canvas id="salesGrowthChart"></canvas>
+                        </div>
                     </div>
                 </section>
             </div> <!-- End imobiliaria tab -->
@@ -619,6 +626,6 @@
         document.getElementById('edit-unit-installment-count').addEventListener('input', updateInstallmentPreview);
     </script>
     <!-- Custom Script -->
-    <script src="app.js?v=2.7"></script>
+    <script src="app.js?v=2.8"></script>
 </body>
 </html>
