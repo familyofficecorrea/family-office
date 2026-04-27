@@ -477,6 +477,10 @@
                     <label>Nome / Identificação</label>
                     <input type="text" id="edit-unit-label" required placeholder="Ex: Apt 101">
                 </div>
+                <div class="input-group" id="edit-unit-tenant-group" style="display: none;">
+                    <label>Inquilino / Cliente (Conta Azul)</label>
+                    <input type="text" id="edit-unit-tenant" placeholder="Ex: Gizele Bermudes">
+                </div>
                 <div class="input-group">
                     <label>Status</label>
                     <select id="edit-unit-status" class="premium-select" required>
@@ -653,6 +657,9 @@
                 <button class="btn-primary" id="btn-process-csv" style="margin-top: 8px; background-color: #2684FF;">
                     <i class="fa-solid fa-cloud-arrow-up"></i> Ler Arquivo e Conciliar
                 </button>
+                <button class="btn-primary" id="btn-apply-csv" style="display: none; margin-top: 8px; background-color: var(--accent-green);">
+                    <i class="fa-solid fa-check"></i> Aplicar e Salvar
+                </button>
             </div>
         </div>
     </div>
@@ -670,6 +677,7 @@
             const expensesGroup = document.getElementById('edit-unit-expenses-group');
             const contractGroup = document.getElementById('edit-unit-contract-group');
             const netYieldPreview = document.getElementById('edit-unit-netyield-preview');
+            const tenantGroup = document.getElementById('edit-unit-tenant-group');
             const saleGroup = document.getElementById('edit-unit-sale-group');
             const saleDateGroup = document.getElementById('edit-unit-sale-date-group');
             const downpaymentGroup = document.getElementById('edit-unit-downpayment-group');
@@ -684,6 +692,7 @@
                 expensesGroup.style.display = 'block';
                 contractGroup.style.display = 'block';
                 netYieldPreview.style.display = 'block';
+                tenantGroup.style.display = 'block';
                 saleGroup.style.display = 'none';
                 saleDateGroup.style.display = 'none';
                 downpaymentGroup.style.display = 'none';
@@ -698,6 +707,7 @@
                 expensesGroup.style.display = 'none';
                 contractGroup.style.display = 'none';
                 netYieldPreview.style.display = 'none';
+                tenantGroup.style.display = 'block';
                 saleGroup.style.display = 'block';
                 saleDateGroup.style.display = 'block';
                 downpaymentGroup.style.display = 'block';
@@ -711,6 +721,7 @@
                 expensesGroup.style.display = 'block';
                 contractGroup.style.display = 'none';
                 netYieldPreview.style.display = 'none';
+                tenantGroup.style.display = 'none';
                 saleGroup.style.display = 'none';
                 saleDateGroup.style.display = 'none';
                 downpaymentGroup.style.display = 'none';

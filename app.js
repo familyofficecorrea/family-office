@@ -1384,6 +1384,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit-unit-building-id').value = buildingId;
         document.getElementById('edit-unit-id').value = unitId;
         document.getElementById('edit-unit-label').value = unit.label;
+        document.getElementById('edit-unit-tenant').value = unit.tenantName || '';
         document.getElementById('edit-unit-status').value = unit.status;
         document.getElementById('edit-unit-rent').value = unit.rentValue || '';
         document.getElementById('edit-unit-rent-start').value = unit.rentStartDate || '';
@@ -2495,6 +2496,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (!unit) return;
 
             unit.label = document.getElementById('edit-unit-label').value.trim();
+            unit.tenantName = document.getElementById('edit-unit-tenant').value.trim();
             unit.status = document.getElementById('edit-unit-status').value;
             unit.rentValue = parseFloat(document.getElementById('edit-unit-rent').value) || 0;
             unit.rentStartDate = document.getElementById('edit-unit-rent-start').value || '';
@@ -2626,102 +2628,222 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
+    let pendingCsvRows = [];
+
     function processContaAzulData(data) {
         const resultsEl = document.getElementById('csv-import-results');
+        const btnApply = document.getElementById('btn-apply-csv');
+        
         let matchedUnits = [];
+        let unmatchedRows = [];
         let totalValue = 0;
+        pendingCsvRows = [];
 
-        // Heuristic matching based on any string field mentioning the unit label
-        data.forEach(row => {
-            const rowValuesStr = Object.values(row).join(' ').toLowerCase();
-            
-            real_estate.forEach(b => {
-                (b.units || []).forEach(u => {
-                    if (u.status === 'disponivel') return;
-                    
-                    const labelLower = u.label.toLowerCase();
-                    // Basic exact string match
-                    if (rowValuesStr.includes(labelLower)) {
-                        let value = 0;
-                        let isReceived = false;
-                        let date = '';
-
-                        for (let key in row) {
-                            const k = key.toLowerCase();
-                            // Find value
-                            if (k.includes('valor') || k.includes('recebido')) {
-                                const valStr = String(row[key] || '').replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                                const parsedVal = parseFloat(valStr);
-                                if (!isNaN(parsedVal)) value = parsedVal;
-                            }
-                            // Find date
-                            if (k.includes('data') || k.includes('vencimento')) {
-                                date = row[key];
-                            }
-                            // Check status
-                            if (k.includes('situa') || k.includes('status')) {
-                                if (String(row[key] || '').toLowerCase().includes('recebido') || String(row[key] || '').toLowerCase().includes('pago')) {
-                                    isReceived = true;
-                                }
-                            }
-                        }
-
-                        // Just looking for anything that has value for the preview
-                        if (value > 0) {
-                            matchedUnits.push({
-                                unit: u,
-                                building: b,
-                                value: value,
-                                date: date,
-                                isReceived: isReceived,
-                                rawRow: row
-                            });
-                        }
-                    }
-                });
+        // Build list of valid units
+        const allUnits = [];
+        real_estate.forEach(b => {
+            (b.units || []).forEach(u => {
+                if (u.status !== 'disponivel') {
+                    allUnits.push({ building: b, unit: u });
+                }
             });
         });
 
-        if (matchedUnits.length > 0) {
-            const uniqueMatches = [];
-            const seen = new Set();
-            matchedUnits.forEach(m => {
-                const key = `${m.unit.id}-${m.value}`;
-                if (!seen.has(key)) {
-                    seen.add(key);
-                    uniqueMatches.push(m);
-                    totalValue += m.value;
-                }
-            });
+        data.forEach(row => {
+            let clientName = '';
+            let value = 0;
+            let date = '';
+            let isReceived = false;
+            let hasValue = false;
 
+            for (let key in row) {
+                const k = key.toLowerCase();
+                if (k.includes('cliente')) clientName = String(row[key] || '').trim();
+                
+                if (k.includes('valor recebido') || k === 'valor recebido da parcela (r$)') {
+                    const valStr = String(row[key] || '').replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+                    const parsedVal = parseFloat(valStr);
+                    if (!isNaN(parsedVal) && parsedVal > 0) {
+                        value = parsedVal;
+                        hasValue = true;
+                    }
+                }
+                
+                if (k.includes('vencimento')) date = row[key];
+                if (k.includes('situa')) {
+                    if (String(row[key] || '').toLowerCase().includes('recebido') || String(row[key] || '').toLowerCase().includes('quitado')) {
+                        isReceived = true;
+                    }
+                }
+            }
+
+            if (!hasValue) {
+                // fallback generic value search
+                for (let key in row) {
+                    const k = key.toLowerCase();
+                    if (k.includes('valor')) {
+                        const valStr = String(row[key] || '').replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+                        const parsedVal = parseFloat(valStr);
+                        if (!isNaN(parsedVal) && parsedVal > 0) {
+                            value = parsedVal;
+                            hasValue = true;
+                        }
+                    }
+                }
+            }
+
+            if (value > 0 && isReceived && clientName) {
+                const rowObj = {
+                    clientName,
+                    value,
+                    date,
+                    rawRow: row,
+                    id: Math.random().toString(36).substring(7)
+                };
+                
+                let foundMatch = false;
+                const clientNameLower = clientName.toLowerCase();
+                
+                for (let i = 0; i < allUnits.length; i++) {
+                    const { building, unit } = allUnits[i];
+                    const tenantMatch = unit.tenantName && unit.tenantName.toLowerCase() === clientNameLower;
+                    const labelMatch = clientNameLower.includes(unit.label.toLowerCase());
+                    
+                    if (tenantMatch || labelMatch) {
+                        matchedUnits.push({ ...rowObj, building, unit });
+                        foundMatch = true;
+                        totalValue += value;
+                        break;
+                    }
+                }
+
+                if (!foundMatch) {
+                    unmatchedRows.push(rowObj);
+                }
+            }
+        });
+
+        // unique matching to prevent duplicate parsing
+        const uniqueMatches = [];
+        const seen = new Set();
+        matchedUnits.forEach(m => {
+            const key = `${m.unit.id}-${m.value}-${m.date}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueMatches.push(m);
+                pendingCsvRows.push(m);
+            }
+        });
+
+        unmatchedRows.forEach(u => pendingCsvRows.push(u));
+
+        if (uniqueMatches.length > 0 || unmatchedRows.length > 0) {
             resultsEl.style.display = 'block';
-            resultsEl.innerHTML = `
+            let html = `
                 <div style="color: var(--accent-green); margin-bottom: 8px;">
-                    <i class="fa-solid fa-circle-check"></i> <strong>${uniqueMatches.length} recebimentos</strong> encontrados com os nomes dos seus imóveis!
-                </div>
-                <div style="font-weight: 600; margin-bottom: 8px; font-size: 14px;">Total Identificado: ${formatCurrency(totalValue)}</div>
-                <ul style="padding-left: 20px; margin-bottom: 12px; color: var(--text-secondary); max-height: 120px; overflow-y: auto;">
-                    ${uniqueMatches.slice(0, 5).map(m => `<li>${m.building.name} - ${m.unit.label} (${formatCurrency(m.value)})</li>`).join('')}
-                    ${uniqueMatches.length > 5 ? `<li>... e mais ${uniqueMatches.length - 5}</li>` : ''}
-                </ul>
-                <div style="padding: 8px; background: rgba(255, 160, 0, 0.1); border-left: 3px solid var(--accent-gold); border-radius: 4px;">
-                    <div style="font-size: 11px; color: var(--accent-gold); margin-bottom: 4px;">
-                        <i class="fa-solid fa-triangle-exclamation"></i> <strong>Mapeamento Pendente</strong>
-                    </div>
-                    <div style="font-size: 11px; color: var(--text-secondary);">
-                        A conciliação inteligente detectou estes imóveis. Para que o sistema faça a <strong>baixa automática</strong> (adicionar +1 parcela paga, etc), valide comigo as colunas originais do seu relatório do Conta Azul.
-                    </div>
+                    <i class="fa-solid fa-circle-check"></i> <strong>${uniqueMatches.length} recebimentos automáticos</strong> (${formatCurrency(totalValue)})
                 </div>
             `;
+            
+            if (uniqueMatches.length > 0) {
+                html += `<ul style="padding-left: 20px; margin-bottom: 12px; color: var(--text-secondary); max-height: 100px; overflow-y: auto;">
+                    ${uniqueMatches.map(m => `<li>${m.building.name} - ${m.unit.label} (${formatCurrency(m.value)}) <span style="font-size: 10px; color: var(--accent-green);"><i class="fa-solid fa-link"></i> Vinculado</span></li>`).join('')}
+                </ul>`;
+            }
+
+            if (unmatchedRows.length > 0) {
+                html += `
+                <div style="padding: 8px; background: rgba(255, 160, 0, 0.1); border-left: 3px solid var(--accent-gold); border-radius: 4px; margin-bottom: 12px;">
+                    <div style="font-size: 11px; color: var(--accent-gold); margin-bottom: 8px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> <strong>${unmatchedRows.length} recebimentos sem vínculo</strong>
+                    </div>
+                    <div style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
+                `;
+
+                const optionsHtml = `<option value="">Ignorar este recebimento...</option>` + allUnits.map(item => 
+                    `<option value="${item.building.id}-${item.unit.id}">${item.building.name} - ${item.unit.label}</option>`
+                ).join('');
+
+                unmatchedRows.forEach(u => {
+                    html += `
+                        <div style="background: rgba(0,0,0,0.2); padding: 8px; border-radius: 6px;">
+                            <div style="display: flex; justify-content: space-between; margin-bottom: 6px;">
+                                <span style="font-size: 12px; color: #fff;">${u.clientName}</span>
+                                <span style="font-size: 12px; color: var(--accent-green); font-weight: 600;">${formatCurrency(u.value)}</span>
+                            </div>
+                            <select class="premium-select unmatched-select" data-row-id="${u.id}" style="width: 100%; font-size: 11px; padding: 6px;">
+                                ${optionsHtml}
+                            </select>
+                        </div>
+                    `;
+                });
+
+                html += `</div></div>`;
+            }
+
+            resultsEl.innerHTML = html;
+            btnApply.style.display = 'block';
         } else {
             resultsEl.style.display = 'block';
             resultsEl.innerHTML = `
                 <div style="color: var(--accent-red); padding: 8px; background: rgba(244, 67, 54, 0.1); border-radius: 6px;">
-                    <i class="fa-solid fa-circle-xmark"></i> Nenhum recebimento encontrado correspondente aos seus imóveis cadastrados. 
-                    <br><span style="font-size: 11px; color: var(--text-secondary);">Certifique-se de que os nomes (ex: "Apt 101") no Conta Azul são idênticos aos cadastrados aqui.</span>
+                    <i class="fa-solid fa-circle-xmark"></i> Nenhum recebimento baixado/quitado foi encontrado no arquivo.
                 </div>
             `;
+            btnApply.style.display = 'none';
         }
+    }
+
+    const btnApplyCsv = document.getElementById('btn-apply-csv');
+    if (btnApplyCsv) {
+        btnApplyCsv.addEventListener('click', () => {
+            const selects = document.querySelectorAll('.unmatched-select');
+            
+            // Map manual selections
+            selects.forEach(select => {
+                if (select.value) {
+                    const rowId = select.getAttribute('data-row-id');
+                    const rowData = pendingCsvRows.find(r => r.id === rowId);
+                    if (rowData) {
+                        const [bId, uId] = select.value.split('-');
+                        const building = real_estate.find(b => b.id === parseInt(bId));
+                        if (building) {
+                            const unit = building.units.find(u => u.id === parseInt(uId));
+                            if (unit) {
+                                rowData.unit = unit;
+                                rowData.building = building;
+                                // Save the tenant linkage permanently!
+                                unit.tenantName = rowData.clientName;
+                            }
+                        }
+                    }
+                }
+            });
+
+            // Process all that have units linked
+            let countProcessed = 0;
+            pendingCsvRows.forEach(row => {
+                if (row.unit) {
+                    const u = row.unit;
+                    if (u.status === 'vendido') {
+                        // Advance paid installments
+                        u.paidInstallments = (u.paidInstallments || 0) + 1;
+                        if (u.paidInstallments > u.installmentCount) {
+                            u.paidInstallments = u.installmentCount;
+                        }
+                    }
+                    countProcessed++;
+                }
+            });
+
+            saveRealEstate();
+            updateRealEstateUI();
+            
+            alert(`${countProcessed} recebimentos aplicados com sucesso! Seu Dashboard e os vínculos de inquilinos foram atualizados.`);
+            document.getElementById('modal-import-csv').classList.remove('visible');
+            document.getElementById('csv-import-results').style.display = 'none';
+            btnApplyCsv.style.display = 'none';
+        });
     }
 
 });
