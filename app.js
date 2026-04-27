@@ -1686,7 +1686,15 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     function updateRealEstateSummary() {
         let totalUnits = 0, totalRent = 0, totalSales = 0, totalMonthlyInstallments = 0;
+        let totalOtherIncome = 0;
+
         real_estate.forEach(b => {
+            if (b.id === 'conta_azul_geral') {
+                (b.units || []).forEach(u => {
+                    totalOtherIncome += (u.saleValue || 0);
+                });
+                return;
+            }
             const info = getOccupancyInfo(b);
             totalUnits += info.total;
             totalRent += info.totalRent;
@@ -1697,15 +1705,71 @@ document.addEventListener('DOMContentLoaded', async () => {
         const unitsEl = document.getElementById('re-total-units');
         const rentEl = document.getElementById('re-total-rent');
         const salesEl = document.getElementById('re-total-sales');
+        const otherEl = document.getElementById('re-other-income');
 
         if (unitsEl) unitsEl.textContent = totalUnits;
         if (rentEl) rentEl.textContent = formatCurrency(totalRent + totalMonthlyInstallments);
         if (salesEl) salesEl.textContent = formatCurrency(totalSales);
+        if (otherEl) otherEl.textContent = formatCurrency(totalOtherIncome);
 
         // Update Visão Geral revenue card (reuse existing RE summary element)
         const revEl = document.getElementById('re-monthly-revenue');
         if (revEl) revEl.innerText = formatCurrency(totalRent + totalMonthlyInstallments);
+
+        renderOutrasReceitas();
     }
+
+    function renderOutrasReceitas() {
+        const section = document.getElementById('outras-receitas-section');
+        const list = document.getElementById('outras-receitas-list');
+        if (!section || !list) return;
+
+        const generalBuilding = real_estate.find(b => b.id === 'conta_azul_geral');
+        if (!generalBuilding || !generalBuilding.units || generalBuilding.units.length === 0) {
+            section.style.display = 'none';
+            return;
+        }
+
+        section.style.display = 'block';
+        list.innerHTML = '';
+
+        generalBuilding.units.forEach(u => {
+            const li = document.createElement('li');
+            li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);';
+            li.innerHTML = `
+                <div style="display: flex; flex-direction: column; gap: 2px;">
+                    <span style="font-size: 13px; color: var(--text-primary);">${u.label}</span>
+                    <span style="font-size: 11px; color: var(--text-secondary);">${u.notes || ''}</span>
+                </div>
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <span style="font-size: 14px; font-weight: 600; color: var(--accent-green);">${formatCurrency(u.saleValue || 0)}</span>
+                    <button onclick="window.deleteOutraReceita(${u.id})" style="background: none; border: none; color: var(--accent-red); cursor: pointer; font-size: 14px; padding: 4px;" title="Excluir">
+                        <i class="fa-solid fa-trash-can"></i>
+                    </button>
+                </div>
+            `;
+            list.appendChild(li);
+        });
+    }
+
+    window.deleteOutraReceita = (unitId) => {
+        const generalBuilding = real_estate.find(b => b.id === 'conta_azul_geral');
+        if (!generalBuilding) return;
+
+        generalBuilding.units = generalBuilding.units.filter(u => u.id !== unitId);
+        if (generalBuilding.units.length === 0) {
+            real_estate = real_estate.filter(b => b.id !== 'conta_azul_geral');
+        }
+        saveRealEstate();
+        updateRealEstateSummary();
+    };
+
+    window.clearAllOutrasReceitas = () => {
+        if (!confirm('Tem certeza que deseja apagar TODAS as Outras Receitas importadas?')) return;
+        real_estate = real_estate.filter(b => b.id !== 'conta_azul_geral');
+        saveRealEstate();
+        updateRealEstateSummary();
+    };
 
     // ─── Rental Income Chart & Timeframe Filter ──────────────────────────────
     window._chartTimeframe = '12m';
@@ -2345,7 +2409,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         const grid = document.getElementById('re-buildings-grid');
         if (!grid) return;
 
-        if (real_estate.length === 0) {
+        const visibleBuildings = real_estate.filter(b => b.id !== 'conta_azul_geral');
+
+        if (visibleBuildings.length === 0) {
             grid.innerHTML = `
                 <div class="empty-state" style="grid-column: 1 / -1; padding: 60px 20px;">
                     <i class="fa-solid fa-city" style="font-size: 48px; color: var(--text-secondary); opacity: 0.3; margin-bottom: 16px; display: block;"></i>
@@ -2353,7 +2419,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             `;
         } else {
-            grid.innerHTML = real_estate.map(b => renderBuildingCard(b)).join('');
+            grid.innerHTML = visibleBuildings.map(b => renderBuildingCard(b)).join('');
         }
 
         updateRealEstateSummary();

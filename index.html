@@ -362,6 +362,18 @@
                     </div>
                 </div>
 
+                <!-- Outras Receitas (Conta Azul) -->
+                <section id="outras-receitas-section" class="glass-panel" style="margin-bottom: 32px; padding: 24px; display: none;">
+                    <div class="section-header" style="margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center;">
+                        <h2><i class="fa-solid fa-coins" style="margin-right: 8px; color: var(--accent-gold);"></i>Outras Receitas (Importadas)</h2>
+                        <button class="btn-refresh" style="border-color: rgba(244, 67, 54, 0.3); color: var(--accent-red); background: rgba(244, 67, 54, 0.1);" onclick="window.clearAllOutrasReceitas()">
+                            <i class="fa-solid fa-trash"></i> Limpar Tudo
+                        </button>
+                    </div>
+                    <ul id="outras-receitas-list" class="asset-list" style="max-height: 300px; overflow-y: auto;">
+                    </ul>
+                </section>
+
                 <!-- Building Detail Panel (hidden by default) -->
                 <div id="building-detail-panel" class="building-detail-panel" style="display: none;">
                     <div class="detail-panel-header">
