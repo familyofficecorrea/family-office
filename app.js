@@ -2595,35 +2595,67 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnProcessCsv.addEventListener('click', () => {
             const fileInput = document.getElementById('csv-file-input');
             if (!fileInput.files.length) {
-                alert('Por favor, selecione um arquivo CSV do Conta Azul.');
+                alert('Por favor, selecione um arquivo do Conta Azul (.xls, .xlsx ou .csv).');
                 return;
             }
             
             const file = fileInput.files[0];
+            const fileName = file.name.toLowerCase();
             const btnOriginalText = btnProcessCsv.innerHTML;
             btnProcessCsv.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...';
             btnProcessCsv.disabled = true;
 
-            // Use PapaParse to read CSV
-            if (typeof Papa !== 'undefined') {
-                Papa.parse(file, {
-                    header: true,
-                    skipEmptyLines: true,
-                    complete: function(results) {
-                        btnProcessCsv.innerHTML = btnOriginalText;
-                        btnProcessCsv.disabled = false;
-                        processContaAzulData(results.data);
-                    },
-                    error: function(err) {
-                        alert('Erro ao ler o arquivo CSV: ' + err.message);
-                        btnProcessCsv.innerHTML = btnOriginalText;
-                        btnProcessCsv.disabled = false;
-                    }
-                });
-            } else {
-                alert('Erro: Biblioteca de leitura de CSV não carregada.');
+            const resetBtn = () => {
                 btnProcessCsv.innerHTML = btnOriginalText;
                 btnProcessCsv.disabled = false;
+            };
+
+            if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
+                // ── Excel: usar SheetJS ──
+                if (typeof XLSX === 'undefined') {
+                    alert('Erro: Biblioteca de leitura de Excel não carregada. Recarregue a página.');
+                    resetBtn();
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.SheetNames[0];
+                        const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' });
+                        resetBtn();
+                        processContaAzulData(jsonData);
+                    } catch (err) {
+                        alert('Erro ao ler o arquivo Excel: ' + err.message);
+                        resetBtn();
+                    }
+                };
+                reader.onerror = function() {
+                    alert('Erro ao abrir o arquivo.');
+                    resetBtn();
+                };
+                reader.readAsArrayBuffer(file);
+
+            } else {
+                // ── CSV: usar PapaParse ──
+                if (typeof Papa !== 'undefined') {
+                    Papa.parse(file, {
+                        header: true,
+                        skipEmptyLines: true,
+                        complete: function(results) {
+                            resetBtn();
+                            processContaAzulData(results.data);
+                        },
+                        error: function(err) {
+                            alert('Erro ao ler o arquivo CSV: ' + err.message);
+                            resetBtn();
+                        }
+                    });
+                } else {
+                    alert('Erro: Biblioteca de leitura de CSV não carregada.');
+                    resetBtn();
+                }
             }
         });
     }
