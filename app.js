@@ -2760,7 +2760,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                     <div style="max-height: 180px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px;">
                 `;
 
-                const optionsHtml = `<option value="">Ignorar este recebimento...</option>` + allUnits.map(item => 
+                const optionsHtml = `<option value="">Ignorar este recebimento...</option>` + 
+                    `<option value="general">💰 Lançar como Outras Receitas (Geral)</option>` +
+                    allUnits.map(item => 
                     `<option value="${item.building.id}-${item.unit.id}">${item.building.name} - ${item.unit.label}</option>`
                 ).join('');
 
@@ -2805,15 +2807,42 @@ document.addEventListener('DOMContentLoaded', async () => {
                     const rowId = select.getAttribute('data-row-id');
                     const rowData = pendingCsvRows.find(r => r.id === rowId);
                     if (rowData) {
-                        const [bId, uId] = select.value.split('-');
-                        const building = real_estate.find(b => b.id === parseInt(bId));
-                        if (building) {
-                            const unit = building.units.find(u => u.id === parseInt(uId));
-                            if (unit) {
-                                rowData.unit = unit;
-                                rowData.building = building;
-                                // Save the tenant linkage permanently!
-                                unit.tenantName = rowData.clientName;
+                        if (select.value === 'general') {
+                            let generalBuilding = real_estate.find(b => b.id === 'conta_azul_geral');
+                            if (!generalBuilding) {
+                                generalBuilding = {
+                                    id: 'conta_azul_geral',
+                                    name: 'Caixa Geral - Outras Receitas',
+                                    address: '',
+                                    totalUnits: 0,
+                                    units: []
+                                };
+                                real_estate.push(generalBuilding);
+                            }
+                            
+                            const maxId = generalBuilding.units.reduce((max, u) => Math.max(max, u.id), 0);
+                            generalBuilding.units.push({
+                                id: maxId + 1,
+                                label: rowData.clientName + ' (' + rowData.date + ')',
+                                status: 'vendido', // Use vendido to represent a one-off paid receipt
+                                saleValue: rowData.value,
+                                downPayment: rowData.value, // It's fully paid
+                                installmentCount: 0,
+                                paidInstallments: 0,
+                                notes: 'Importado Conta Azul'
+                            });
+                            
+                            rowData.isGeneral = true; // Mark as processed
+                        } else {
+                            const [bId, uId] = select.value.split('-');
+                            const building = real_estate.find(b => b.id === parseInt(bId));
+                            if (building) {
+                                const unit = building.units.find(u => u.id === parseInt(uId));
+                                if (unit) {
+                                    rowData.unit = unit;
+                                    rowData.building = building;
+                                    unit.tenantName = rowData.clientName;
+                                }
                             }
                         }
                     }
@@ -2823,7 +2852,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Process all that have units linked
             let countProcessed = 0;
             pendingCsvRows.forEach(row => {
-                if (row.unit) {
+                if (row.isGeneral) {
+                    countProcessed++;
+                } else if (row.unit) {
                     const u = row.unit;
                     if (u.status === 'vendido') {
                         // Advance paid installments
