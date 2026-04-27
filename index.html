@@ -280,6 +280,13 @@
 
             <!-- Tab: Real Estate -->
             <div id="imobiliaria" class="tab-content">
+                <div style="display: flex; justify-content: flex-end; margin-bottom: 16px; align-items: center;">
+                    <label class="custom-toggle" style="display: flex; align-items: center; cursor: pointer;">
+                        <input type="checkbox" id="re-net-yield-toggle" style="margin-right: 8px; width: 16px; height: 16px; accent-color: var(--accent-green);">
+                        <span style="color: var(--text-secondary); font-size: 14px; font-weight: 500;">Visão Líquida (Descontar IPTU, Cond. e Tx. Adm)</span>
+                    </label>
+                </div>
+
                 <!-- Summary Cards -->
                 <section class="summary-cards" style="margin-bottom: 32px;">
                     <div class="card premium-card">
@@ -303,6 +310,16 @@
                             <h2 id="re-total-sales">R$ 0,00</h2>
                         </div>
                     </div>
+                </section>
+
+                <!-- Alertas de Contratos -->
+                <section class="contract-alerts glass-panel" style="margin-bottom: 32px; padding: 24px;">
+                    <div class="section-header" style="margin-bottom: 16px;">
+                        <h2><i class="fa-solid fa-bell" style="margin-right: 8px; color: var(--accent-gold);"></i> Alertas de Contratos e Reajustes</h2>
+                    </div>
+                    <ul id="contract-alerts-list" class="asset-list" style="max-height: 250px; overflow-y: auto;">
+                        <li class="empty-state">Tudo em dia. Nenhum alerta no momento.</li>
+                    </ul>
                 </section>
 
                 <!-- Notificações de Parcelas -->
@@ -471,6 +488,37 @@
                     <label>Data Início do Aluguel</label>
                     <input type="date" id="edit-unit-rent-start">
                 </div>
+                <div class="input-group" id="edit-unit-expenses-group" style="display: none;">
+                    <label>Despesas Recorrentes (Mensais/Anuais)</label>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                        <input type="number" id="edit-unit-iptu" step="0.01" min="0" placeholder="IPTU (Anual)" style="flex: 1;">
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-secondary); width: 140px;">
+                            <input type="checkbox" id="edit-unit-iptu-included" style="width: 14px; height: 14px;"> Pago pelo Proprietário
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
+                        <input type="number" id="edit-unit-condo" step="0.01" min="0" placeholder="Cond. (Mensal)" style="flex: 1;">
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-secondary); width: 140px;">
+                            <input type="checkbox" id="edit-unit-condo-included" style="width: 14px; height: 14px;"> Pago pelo Proprietário
+                        </label>
+                    </div>
+                    <div style="display: flex; gap: 8px; align-items: center;">
+                        <input type="number" id="edit-unit-adm-fee" step="0.1" min="0" max="100" placeholder="Tx. Adm (%)" style="flex: 1;">
+                        <span style="font-size: 11px; color: var(--text-secondary); width: 140px;">% sobre aluguel líquido</span>
+                    </div>
+                </div>
+                <div class="input-group" id="edit-unit-contract-group" style="display: none;">
+                    <label>Contrato e Reajuste</label>
+                    <div style="display: flex; gap: 8px;">
+                        <input type="date" id="edit-unit-contract-end" title="Vencimento do Contrato" style="flex: 1;">
+                        <select id="edit-unit-adj-index" class="premium-select" style="flex: 1;">
+                            <option value="">Sem Reajuste</option>
+                            <option value="IPCA">IPCA</option>
+                            <option value="IGPM">IGP-M</option>
+                            <option value="INPC">INPC</option>
+                        </select>
+                    </div>
+                </div>
                 <div class="input-group" id="edit-unit-sale-group" style="display: none;">
                     <label>Valor Total de Venda (R$)</label>
                     <input type="number" id="edit-unit-sale" step="0.01" min="0" placeholder="Ex: 180000">
@@ -575,6 +623,8 @@
         document.getElementById('edit-unit-status').addEventListener('change', function() {
             const rentGroup = document.getElementById('edit-unit-rent-group');
             const rentStartGroup = document.getElementById('edit-unit-rent-start-group');
+            const expensesGroup = document.getElementById('edit-unit-expenses-group');
+            const contractGroup = document.getElementById('edit-unit-contract-group');
             const saleGroup = document.getElementById('edit-unit-sale-group');
             const saleDateGroup = document.getElementById('edit-unit-sale-date-group');
             const downpaymentGroup = document.getElementById('edit-unit-downpayment-group');
@@ -582,9 +632,12 @@
             const installmentStartGroup = document.getElementById('edit-unit-installment-start-group');
             const installmentPreview = document.getElementById('edit-unit-installment-preview');
             const paidGroup = document.getElementById('edit-unit-paid-group');
+            
             if (this.value === 'alugado') {
                 rentGroup.style.display = 'block';
                 rentStartGroup.style.display = 'block';
+                expensesGroup.style.display = 'block';
+                contractGroup.style.display = 'block';
                 saleGroup.style.display = 'none';
                 saleDateGroup.style.display = 'none';
                 downpaymentGroup.style.display = 'none';
@@ -595,6 +648,8 @@
             } else if (this.value === 'vendido') {
                 rentGroup.style.display = 'none';
                 rentStartGroup.style.display = 'none';
+                expensesGroup.style.display = 'none';
+                contractGroup.style.display = 'none';
                 saleGroup.style.display = 'block';
                 saleDateGroup.style.display = 'block';
                 downpaymentGroup.style.display = 'block';
@@ -605,6 +660,8 @@
             } else {
                 rentGroup.style.display = 'none';
                 rentStartGroup.style.display = 'none';
+                expensesGroup.style.display = 'block';
+                contractGroup.style.display = 'none';
                 saleGroup.style.display = 'none';
                 saleDateGroup.style.display = 'none';
                 downpaymentGroup.style.display = 'none';

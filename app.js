@@ -1350,6 +1350,15 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit-unit-status').value = unit.status;
         document.getElementById('edit-unit-rent').value = unit.rentValue || '';
         document.getElementById('edit-unit-rent-start').value = unit.rentStartDate || '';
+        
+        document.getElementById('edit-unit-iptu').value = unit.iptuValue || '';
+        document.getElementById('edit-unit-iptu-included').checked = !!unit.iptuIncluded;
+        document.getElementById('edit-unit-condo').value = unit.condoValue || '';
+        document.getElementById('edit-unit-condo-included').checked = !!unit.condoIncluded;
+        document.getElementById('edit-unit-adm-fee').value = unit.admFeePercent || '';
+        document.getElementById('edit-unit-contract-end').value = unit.contractEndDate || '';
+        document.getElementById('edit-unit-adj-index').value = unit.adjustmentIndex || '';
+
         document.getElementById('edit-unit-sale').value = unit.saleValue || '';
         document.getElementById('edit-unit-sale-date').value = unit.saleDate || '';
         document.getElementById('edit-unit-downpayment').value = unit.downPayment || '';
@@ -1363,6 +1372,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const status = unit.status;
         document.getElementById('edit-unit-rent-group').style.display = (status === 'alugado') ? 'block' : 'none';
         document.getElementById('edit-unit-rent-start-group').style.display = (status === 'alugado') ? 'block' : 'none';
+        document.getElementById('edit-unit-expenses-group').style.display = (status === 'alugado' || status === 'disponivel') ? 'block' : 'none';
+        document.getElementById('edit-unit-contract-group').style.display = (status === 'alugado') ? 'block' : 'none';
         document.getElementById('edit-unit-sale-group').style.display = (status === 'vendido') ? 'block' : 'none';
         document.getElementById('edit-unit-sale-date-group').style.display = (status === 'vendido') ? 'block' : 'none';
         document.getElementById('edit-unit-downpayment-group').style.display = (status === 'vendido') ? 'block' : 'none';
@@ -1398,6 +1409,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
+    let _showNetYield = false;
+
+    function getEffectiveRent(u) {
+        if (!u.rentValue) return 0;
+        if (!_showNetYield) return u.rentValue;
+
+        let net = u.rentValue;
+        if (u.condoIncluded) net -= (u.condoValue || 0);
+        if (u.iptuIncluded) net -= ((u.iptuValue || 0) / 12);
+        if (u.admFeePercent) net -= (u.rentValue * (u.admFeePercent / 100));
+        return Math.max(0, net);
+    }
+
     function getOccupancyInfo(building) {
         const units = building.units || [];
         const activeUnits = units.filter(u => u.status !== 'vendido');
@@ -1410,7 +1434,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const todayStr = new Date().toISOString().split('T')[0];
         const totalRent = units.filter(u => u.status === 'alugado').reduce((s, u) => {
             if (u.rentStartDate && u.rentStartDate > todayStr) return s;
-            return s + (u.rentValue || 0);
+            return s + getEffectiveRent(u);
         }, 0);
         const totalSales = units.filter(u => u.status === 'vendido').reduce((s, u) => s + (u.saleValue || 0), 0);
 
@@ -1564,7 +1588,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             const statusLabel = u.status === 'alugado' ? 'Alugado' : u.status === 'vendido' ? 'Vendido' : 'Disponível';
             let valueHtml = '';
             if (u.status === 'alugado' && u.rentValue) {
-                valueHtml = `<div class="unit-card-value rent">${formatCurrency(u.rentValue)}/mês</div>`;
+                const effective = getEffectiveRent(u);
+                const displayVal = formatCurrency(effective) + '/mês';
+                valueHtml = `<div class="unit-card-value rent">${displayVal}${_showNetYield && effective < u.rentValue ? ' <span style="font-size: 10px; opacity: 0.8;">(Líquido)</span>' : ''}</div>`;
             } else if (u.status === 'vendido' && u.saleValue) {
                 const downPay = u.downPayment || 0;
                 const count = u.installmentCount || 0;
@@ -1659,11 +1685,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             (b.units || []).forEach(u => {
                 if (u.status === 'alugado' && u.rentValue > 0) {
                     if (!u.rentStartDate) {
-                        if (d >= defaultStartDate) mRent += u.rentValue;
+                        if (d >= defaultStartDate) mRent += getEffectiveRent(u);
                     } else {
                         const start = new Date(u.rentStartDate + 'T12:00:00Z');
                         const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
-                        if (d >= startMonth) mRent += u.rentValue;
+                        if (d >= startMonth) mRent += getEffectiveRent(u);
                     }
                 }
                 if (u.status === 'vendido' && u.saleValue > 0) {
@@ -2168,6 +2194,109 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    function updateContractAlertsUI() {
+        const listEl = document.getElementById('contract-alerts-list');
+        if (!listEl) return;
+
+        let alerts = [];
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        const next60Days = new Date(today.getTime() + 60 * 24 * 60 * 60 * 1000);
+
+        real_estate.forEach(b => {
+            (b.units || []).forEach(u => {
+                if (u.status === 'alugado') {
+                    // Check Contract Expiration
+                    if (u.contractEndDate) {
+                        const endD = new Date(u.contractEndDate + 'T12:00:00Z');
+                        if (endD <= next60Days) {
+                            const isExpired = endD < today;
+                            alerts.push({
+                                type: 'vencimento',
+                                buildingName: b.name,
+                                unitLabel: u.label,
+                                date: endD,
+                                index: null,
+                                buildingId: b.id,
+                                unitId: u.id,
+                                isExpired: isExpired,
+                                diffDays: Math.ceil((endD - today) / (1000 * 60 * 60 * 24))
+                            });
+                        }
+                    }
+                    
+                    // Check Reajuste (Adjustment)
+                    if (u.adjustmentIndex && u.rentStartDate) {
+                        const startD = new Date(u.rentStartDate + 'T12:00:00Z');
+                        const adjMonth = startD.getMonth();
+                        const currentMonth = today.getMonth();
+                        
+                        // Alert if it's the current month or next month
+                        const nextMonth = (currentMonth + 1) % 12;
+                        if (adjMonth === currentMonth || adjMonth === nextMonth) {
+                            // ensure it's not the first year
+                            if (today.getFullYear() > startD.getFullYear() || (today.getFullYear() === startD.getFullYear() && currentMonth > adjMonth)) {
+                                alerts.push({
+                                    type: 'reajuste',
+                                    buildingName: b.name,
+                                    unitLabel: u.label,
+                                    date: null,
+                                    monthStr: new Date(2000, adjMonth, 1).toLocaleString('pt-BR', { month: 'long' }),
+                                    index: u.adjustmentIndex,
+                                    buildingId: b.id,
+                                    unitId: u.id
+                                });
+                            }
+                        }
+                    }
+                }
+            });
+        });
+
+        if (alerts.length === 0) {
+            listEl.innerHTML = '<li class="empty-state">Tudo em dia. Nenhum alerta no momento.</li>';
+        } else {
+            listEl.innerHTML = alerts.map(item => {
+                if (item.type === 'vencimento') {
+                    const dateStr = `${String(item.date.getDate()).padStart(2, '0')}/${String(item.date.getMonth() + 1).padStart(2, '0')}/${item.date.getFullYear()}`;
+                    const dateColor = item.isExpired ? 'color: var(--accent-red); font-weight: 600;' : 'color: var(--accent-gold); font-weight: 600;';
+                    const diffText = item.isExpired ? 'Contrato Vencido' : `Vence em ${item.diffDays} dias`;
+                    return `
+                        <li class="asset-item" style="cursor: pointer;" onclick="window.editUnit(${item.buildingId}, ${item.unitId})">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="avatar" style="background: rgba(255, 160, 0, 0.1); color: var(--accent-gold); width: 36px; height: 36px; border-radius: 10px;">
+                                    <i class="fa-solid fa-file-contract"></i>
+                                </div>
+                                <div>
+                                    <div class="asset-name" style="margin-bottom: 2px;">${item.buildingName} - ${item.unitLabel}</div>
+                                    <span class="asset-date" style="margin-top: 0; font-size: 12px; ${dateColor}">
+                                        ${diffText} (${dateStr})
+                                    </span>
+                                </div>
+                            </div>
+                        </li>
+                    `;
+                } else {
+                    return `
+                        <li class="asset-item" style="cursor: pointer;" onclick="window.editUnit(${item.buildingId}, ${item.unitId})">
+                            <div style="display: flex; align-items: center; gap: 12px;">
+                                <div class="avatar" style="background: rgba(41, 98, 255, 0.1); color: var(--accent-blue); width: 36px; height: 36px; border-radius: 10px;">
+                                    <i class="fa-solid fa-chart-line"></i>
+                                </div>
+                                <div>
+                                    <div class="asset-name" style="margin-bottom: 2px;">${item.buildingName} - ${item.unitLabel}</div>
+                                    <span class="asset-date" style="margin-top: 0; font-size: 12px; color: var(--accent-blue); font-weight: 600;">
+                                        Reajuste anual pelo ${item.index} em ${item.monthStr.charAt(0).toUpperCase() + item.monthStr.slice(1)}
+                                    </span>
+                                </div>
+                            </div>
+                        </li>
+                    `;
+                }
+            }).join('');
+        }
+    }
+
     window.updateRealEstateUI = () => {
         const grid = document.getElementById('re-buildings-grid');
         if (!grid) return;
@@ -2187,6 +2316,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderRentalIncomeChart();
         renderSalesGrowthChart();
         updateUpcomingInstallmentsUI();
+        updateContractAlertsUI();
 
         // If detail panel is open, refresh it too
         if (_currentBuildingId) {
@@ -2196,6 +2326,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
         }
     };
+
+    const reNetYieldToggle = document.getElementById('re-net-yield-toggle');
+    if (reNetYieldToggle) {
+        reNetYieldToggle.addEventListener('change', (e) => {
+            _showNetYield = e.target.checked;
+            updateRealEstateUI();
+        });
+    }
 
     // ─── Event Delegation (avoids inline onclick bubbling issues) ─────────────
     const buildingsGrid = document.getElementById('re-buildings-grid');
@@ -2317,6 +2455,15 @@ document.addEventListener('DOMContentLoaded', async () => {
             unit.status = document.getElementById('edit-unit-status').value;
             unit.rentValue = parseFloat(document.getElementById('edit-unit-rent').value) || 0;
             unit.rentStartDate = document.getElementById('edit-unit-rent-start').value || '';
+            
+            unit.iptuValue = parseFloat(document.getElementById('edit-unit-iptu').value) || 0;
+            unit.iptuIncluded = document.getElementById('edit-unit-iptu-included').checked;
+            unit.condoValue = parseFloat(document.getElementById('edit-unit-condo').value) || 0;
+            unit.condoIncluded = document.getElementById('edit-unit-condo-included').checked;
+            unit.admFeePercent = parseFloat(document.getElementById('edit-unit-adm-fee').value) || 0;
+            unit.contractEndDate = document.getElementById('edit-unit-contract-end').value || '';
+            unit.adjustmentIndex = document.getElementById('edit-unit-adj-index').value || '';
+
             unit.saleValue = parseFloat(document.getElementById('edit-unit-sale').value) || 0;
             unit.saleDate = document.getElementById('edit-unit-sale-date').value || '';
             unit.downPayment = parseFloat(document.getElementById('edit-unit-downpayment').value) || 0;
