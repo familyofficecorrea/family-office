@@ -305,6 +305,16 @@
                     </div>
                 </section>
 
+                <!-- Notificações de Parcelas -->
+                <section class="upcoming-installments glass-panel" style="margin-bottom: 32px; padding: 24px;">
+                    <div class="section-header" style="margin-bottom: 16px;">
+                        <h2><i class="fa-solid fa-calendar-check" style="margin-right: 8px; color: var(--accent-blue);"></i> Próximos Pagamentos Parcelados</h2>
+                    </div>
+                    <ul id="upcoming-installments-list" class="asset-list" style="max-height: 300px; overflow-y: auto;">
+                        <li class="empty-state">Nenhum pagamento parcelado em aberto.</li>
+                    </ul>
+                </section>
+
                 <div class="section-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center;">
                     <h2>Meus Imóveis</h2>
                     <button class="btn-primary" id="btn-add-building" style="width: auto; margin-bottom: 0; padding: 10px 20px;" onclick="document.getElementById('modal-add-building').classList.add('visible')">

@@ -2099,6 +2099,75 @@ document.addEventListener('DOMContentLoaded', async () => {
         salesChartObj = new Chart(ctx.getContext('2d'), chartConfig);
     }
 
+    function updateUpcomingInstallmentsUI() {
+        const listEl = document.getElementById('upcoming-installments-list');
+        if (!listEl) return;
+
+        let upcoming = [];
+
+        real_estate.forEach(b => {
+            (b.units || []).forEach(u => {
+                if (u.status === 'vendido' && u.installmentCount > 0 && u.installmentStartDate) {
+                    const paid = u.paidInstallments || 0;
+                    const remaining = u.installmentCount - paid;
+                    if (remaining > 0) {
+                        const downPay = u.downPayment || 0;
+                        const financed = u.saleValue - downPay;
+                        const installmentVal = financed / u.installmentCount;
+                        
+                        const start = new Date(u.installmentStartDate + 'T12:00:00Z');
+                        let nextDate = new Date(start.getFullYear(), start.getMonth() + paid, start.getDate());
+                        
+                        upcoming.push({
+                            buildingName: b.name,
+                            unitLabel: u.label,
+                            date: nextDate,
+                            value: installmentVal,
+                            remaining: remaining,
+                            unitId: u.id,
+                            buildingId: b.id
+                        });
+                    }
+                }
+            });
+        });
+
+        upcoming.sort((a, b) => a.date - b.date);
+
+        if (upcoming.length === 0) {
+            listEl.innerHTML = '<li class="empty-state">Nenhum pagamento parcelado em aberto.</li>';
+        } else {
+            listEl.innerHTML = upcoming.map(item => {
+                const dateStr = `${String(item.date.getDate()).padStart(2, '0')}/${String(item.date.getMonth() + 1).padStart(2, '0')}/${item.date.getFullYear()}`;
+                
+                // Highlight if overdue
+                const today = new Date();
+                today.setHours(0,0,0,0);
+                const isOverdue = item.date < today;
+                const dateColor = isOverdue ? 'color: var(--accent-red); font-weight: 600;' : 'color: var(--text-secondary);';
+                
+                return `
+                    <li class="asset-item" style="cursor: pointer;" onclick="window.editUnit(${item.buildingId}, ${item.unitId})">
+                        <div style="display: flex; align-items: center; gap: 12px;">
+                            <div class="avatar" style="background: rgba(41, 98, 255, 0.1); color: var(--accent-blue); width: 36px; height: 36px; border-radius: 10px;">
+                                <i class="fa-solid fa-file-invoice-dollar"></i>
+                            </div>
+                            <div>
+                                <div class="asset-name" style="margin-bottom: 2px;">${item.buildingName} - ${item.unitLabel}</div>
+                                <span class="asset-date" style="margin-top: 0; font-size: 12px; ${dateColor}">
+                                    Vencimento: ${dateStr} • Restam ${item.remaining} parcelas
+                                </span>
+                            </div>
+                        </div>
+                        <div style="text-align: right;">
+                            <div class="asset-val" style="color: var(--accent-blue); font-size: 15px;">${formatCurrency(item.value)}</div>
+                        </div>
+                    </li>
+                `;
+            }).join('');
+        }
+    }
+
     window.updateRealEstateUI = () => {
         const grid = document.getElementById('re-buildings-grid');
         if (!grid) return;
@@ -2117,6 +2186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         updateRealEstateSummary();
         renderRentalIncomeChart();
         renderSalesGrowthChart();
+        updateUpcomingInstallmentsUI();
 
         // If detail panel is open, refresh it too
         if (_currentBuildingId) {
