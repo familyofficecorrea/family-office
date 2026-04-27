@@ -1337,6 +1337,43 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit-building-address').value = building.address || '';
         document.getElementById('modal-edit-building').classList.add('visible');
     };
+    window.updateNetYieldPreview = () => {
+        const status = document.getElementById('edit-unit-status').value;
+        const previewEl = document.getElementById('edit-unit-netyield-preview');
+        if (status !== 'alugado') {
+            previewEl.style.display = 'none';
+            return;
+        }
+
+        const rent = parseFloat(document.getElementById('edit-unit-rent').value) || 0;
+        const iptu = parseFloat(document.getElementById('edit-unit-iptu').value) || 0;
+        const iptuIncluded = document.getElementById('edit-unit-iptu-included').checked;
+        const condo = parseFloat(document.getElementById('edit-unit-condo').value) || 0;
+        const condoIncluded = document.getElementById('edit-unit-condo-included').checked;
+        const admFee = parseFloat(document.getElementById('edit-unit-adm-fee').value) || 0;
+
+        let deductions = 0;
+        if (iptuIncluded) deductions += (iptu / 12);
+        if (condoIncluded) deductions += condo;
+        if (admFee) deductions += (rent * (admFee / 100));
+
+        const net = Math.max(0, rent - deductions);
+
+        document.getElementById('preview-gross-rent').textContent = formatCurrency(rent);
+        document.getElementById('preview-expenses-deducted').textContent = formatCurrency(deductions);
+        document.getElementById('preview-net-rent').textContent = formatCurrency(net);
+        previewEl.style.display = 'block';
+    };
+
+    const netYieldInputs = ['edit-unit-rent', 'edit-unit-iptu', 'edit-unit-iptu-included', 'edit-unit-condo', 'edit-unit-condo-included', 'edit-unit-adm-fee'];
+    netYieldInputs.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+            el.addEventListener('input', window.updateNetYieldPreview);
+            el.addEventListener('change', window.updateNetYieldPreview);
+        }
+    });
+
 
     window.editUnit = (buildingId, unitId) => {
         const building = real_estate.find(b => b.id === buildingId);
@@ -1390,7 +1427,13 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('edit-unit-financed-value').textContent = formatCurrency(financed);
             preview.style.display = 'block';
         } else {
-            preview.style.display = (status === 'vendido') ? 'block' : 'none';
+            preview.style.display = 'none';
+        }
+
+        if (status === 'alugado') {
+            window.updateNetYieldPreview();
+        } else {
+            document.getElementById('edit-unit-netyield-preview').style.display = 'none';
         }
 
         document.getElementById('modal-edit-unit').classList.add('visible');
@@ -2543,5 +2586,142 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ─── Live Reload: detecta mudanças no código ─────────────────────────
     setInterval(pollForCodeChanges, 3000);  // Código: checa a cada 3 segundos
+
+    // ─── Conta Azul Integration ──────────────────────────────────────────────
+    const btnProcessCsv = document.getElementById('btn-process-csv');
+    if (btnProcessCsv) {
+        btnProcessCsv.addEventListener('click', () => {
+            const fileInput = document.getElementById('csv-file-input');
+            if (!fileInput.files.length) {
+                alert('Por favor, selecione um arquivo CSV do Conta Azul.');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const btnOriginalText = btnProcessCsv.innerHTML;
+            btnProcessCsv.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...';
+            btnProcessCsv.disabled = true;
+
+            // Use PapaParse to read CSV
+            if (typeof Papa !== 'undefined') {
+                Papa.parse(file, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        btnProcessCsv.innerHTML = btnOriginalText;
+                        btnProcessCsv.disabled = false;
+                        processContaAzulData(results.data);
+                    },
+                    error: function(err) {
+                        alert('Erro ao ler o arquivo CSV: ' + err.message);
+                        btnProcessCsv.innerHTML = btnOriginalText;
+                        btnProcessCsv.disabled = false;
+                    }
+                });
+            } else {
+                alert('Erro: Biblioteca de leitura de CSV não carregada.');
+                btnProcessCsv.innerHTML = btnOriginalText;
+                btnProcessCsv.disabled = false;
+            }
+        });
+    }
+
+    function processContaAzulData(data) {
+        const resultsEl = document.getElementById('csv-import-results');
+        let matchedUnits = [];
+        let totalValue = 0;
+
+        // Heuristic matching based on any string field mentioning the unit label
+        data.forEach(row => {
+            const rowValuesStr = Object.values(row).join(' ').toLowerCase();
+            
+            real_estate.forEach(b => {
+                (b.units || []).forEach(u => {
+                    if (u.status === 'disponivel') return;
+                    
+                    const labelLower = u.label.toLowerCase();
+                    // Basic exact string match
+                    if (rowValuesStr.includes(labelLower)) {
+                        let value = 0;
+                        let isReceived = false;
+                        let date = '';
+
+                        for (let key in row) {
+                            const k = key.toLowerCase();
+                            // Find value
+                            if (k.includes('valor') || k.includes('recebido')) {
+                                const valStr = String(row[key] || '').replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
+                                const parsedVal = parseFloat(valStr);
+                                if (!isNaN(parsedVal)) value = parsedVal;
+                            }
+                            // Find date
+                            if (k.includes('data') || k.includes('vencimento')) {
+                                date = row[key];
+                            }
+                            // Check status
+                            if (k.includes('situa') || k.includes('status')) {
+                                if (String(row[key] || '').toLowerCase().includes('recebido') || String(row[key] || '').toLowerCase().includes('pago')) {
+                                    isReceived = true;
+                                }
+                            }
+                        }
+
+                        // Just looking for anything that has value for the preview
+                        if (value > 0) {
+                            matchedUnits.push({
+                                unit: u,
+                                building: b,
+                                value: value,
+                                date: date,
+                                isReceived: isReceived,
+                                rawRow: row
+                            });
+                        }
+                    }
+                });
+            });
+        });
+
+        if (matchedUnits.length > 0) {
+            const uniqueMatches = [];
+            const seen = new Set();
+            matchedUnits.forEach(m => {
+                const key = `${m.unit.id}-${m.value}`;
+                if (!seen.has(key)) {
+                    seen.add(key);
+                    uniqueMatches.push(m);
+                    totalValue += m.value;
+                }
+            });
+
+            resultsEl.style.display = 'block';
+            resultsEl.innerHTML = `
+                <div style="color: var(--accent-green); margin-bottom: 8px;">
+                    <i class="fa-solid fa-circle-check"></i> <strong>${uniqueMatches.length} recebimentos</strong> encontrados com os nomes dos seus imóveis!
+                </div>
+                <div style="font-weight: 600; margin-bottom: 8px; font-size: 14px;">Total Identificado: ${formatCurrency(totalValue)}</div>
+                <ul style="padding-left: 20px; margin-bottom: 12px; color: var(--text-secondary); max-height: 120px; overflow-y: auto;">
+                    ${uniqueMatches.slice(0, 5).map(m => `<li>${m.building.name} - ${m.unit.label} (${formatCurrency(m.value)})</li>`).join('')}
+                    ${uniqueMatches.length > 5 ? `<li>... e mais ${uniqueMatches.length - 5}</li>` : ''}
+                </ul>
+                <div style="padding: 8px; background: rgba(255, 160, 0, 0.1); border-left: 3px solid var(--accent-gold); border-radius: 4px;">
+                    <div style="font-size: 11px; color: var(--accent-gold); margin-bottom: 4px;">
+                        <i class="fa-solid fa-triangle-exclamation"></i> <strong>Mapeamento Pendente</strong>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-secondary);">
+                        A conciliação inteligente detectou estes imóveis. Para que o sistema faça a <strong>baixa automática</strong> (adicionar +1 parcela paga, etc), valide comigo as colunas originais do seu relatório do Conta Azul.
+                    </div>
+                </div>
+            `;
+        } else {
+            resultsEl.style.display = 'block';
+            resultsEl.innerHTML = `
+                <div style="color: var(--accent-red); padding: 8px; background: rgba(244, 67, 54, 0.1); border-radius: 6px;">
+                    <i class="fa-solid fa-circle-xmark"></i> Nenhum recebimento encontrado correspondente aos seus imóveis cadastrados. 
+                    <br><span style="font-size: 11px; color: var(--text-secondary);">Certifique-se de que os nomes (ex: "Apt 101") no Conta Azul são idênticos aos cadastrados aqui.</span>
+                </div>
+            `;
+        }
+    }
 
 });
