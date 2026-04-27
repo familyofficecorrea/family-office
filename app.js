@@ -2758,30 +2758,55 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const k = key.toLowerCase();
                 if (k.includes('cliente')) clientName = String(row[key] || '').trim();
                 
-                if (k.includes('valor recebido') || k === 'valor recebido da parcela (r$)') {
-                    const valStr = String(row[key] || '').replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                    const parsedVal = parseFloat(valStr);
+                if (k.includes('valor recebido') || k.includes('valor total recebido')) {
+                    const rawVal = row[key];
+                    let parsedVal = 0;
+                    if (typeof rawVal === 'number') {
+                        parsedVal = rawVal;
+                    } else {
+                        const valStr = String(rawVal || '').replace('R$', '').replace(/\s/g, '').trim();
+                        // Check if it looks like Brazilian format (1.234,56) or standard (1234.56)
+                        if (valStr.includes(',')) {
+                            parsedVal = parseFloat(valStr.replace(/\./g, '').replace(',', '.'));
+                        } else {
+                            parsedVal = parseFloat(valStr);
+                        }
+                    }
                     if (!isNaN(parsedVal) && parsedVal > 0) {
                         value = parsedVal;
                         hasValue = true;
                     }
                 }
                 
-                if (k.includes('vencimento')) date = row[key];
+                if (k.includes('vencimento')) date = String(row[key] || '');
                 if (k.includes('situa')) {
-                    if (String(row[key] || '').toLowerCase().includes('recebido') || String(row[key] || '').toLowerCase().includes('quitado')) {
+                    const sitVal = String(row[key] || '').toLowerCase()
+                        .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // remove accents
+                    if (sitVal.includes('quitado') || sitVal.includes('recebido') || 
+                        sitVal.includes('pago') || sitVal.includes('baixado') || 
+                        sitVal.includes('liquidado')) {
                         isReceived = true;
                     }
                 }
             }
 
             if (!hasValue) {
-                // fallback generic value search
+                // fallback: try 'valor original' column
                 for (let key in row) {
                     const k = key.toLowerCase();
-                    if (k.includes('valor')) {
-                        const valStr = String(row[key] || '').replace('R$', '').replace(/\./g, '').replace(',', '.').trim();
-                        const parsedVal = parseFloat(valStr);
+                    if (k.includes('valor original') || k.includes('valor total')) {
+                        const rawVal = row[key];
+                        let parsedVal = 0;
+                        if (typeof rawVal === 'number') {
+                            parsedVal = rawVal;
+                        } else {
+                            const valStr = String(rawVal || '').replace('R$', '').replace(/\s/g, '').trim();
+                            if (valStr.includes(',')) {
+                                parsedVal = parseFloat(valStr.replace(/\./g, '').replace(',', '.'));
+                            } else {
+                                parsedVal = parseFloat(valStr);
+                            }
+                        }
                         if (!isNaN(parsedVal) && parsedVal > 0) {
                             value = parsedVal;
                             hasValue = true;
