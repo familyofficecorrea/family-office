@@ -2625,25 +2625,32 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ─── Carregar dados do servidor ──────────────────────────────────────────
-    const online = await checkAPIHealth();
-    if (online) {
-        const loaded = await loadAssetsFromServer();
-        if (!loaded) console.warn('Sem ativos no servidor, usando lista vazia.');
-        
-        const loadedRe = await loadRealEstateFromServer();
-        if (!loadedRe) console.warn('Sem imóveis no servidor, usando lista vazia.');
-    }
+    try {
+        const online = await checkAPIHealth();
+        if (online) {
+            const loaded = await loadAssetsFromServer();
+            if (!loaded) console.warn('Sem ativos no servidor, usando lista vazia.');
+            
+            const loadedRe = await loadRealEstateFromServer();
+            if (!loadedRe) console.warn('Sem imóveis no servidor, usando lista vazia.');
+        }
 
-    // ─── Initial Render ──────────────────────────────────────────────────
-    updateAssetListUI();
-    updateMeusAtivosUI();
-    updateDetailedPortfolioUI();
-    updateTotalEquity();
-    updateRealEstateUI();
+        // ─── Initial Render ──────────────────────────────────────────────────
+        updateAssetListUI();
+        updateMeusAtivosUI();
+        updateDetailedPortfolioUI();
+        updateTotalEquity();
+        updateRealEstateUI();
 
-    // ─── Auto-refresh cotações ────────────────────────────────────────────
-    if (online) {
-        await refreshAllQuotes();
+        // ─── Auto-refresh cotações ────────────────────────────────────────────
+        if (online) {
+            await refreshAllQuotes();
+        }
+    } catch (initErr) {
+        console.error('[INIT] Erro durante carregamento inicial:', initErr);
+        // Ainda renderiza o que tiver disponível
+        try { updateAssetListUI(); } catch(e) {}
+        try { updateRealEstateUI(); } catch(e) {}
     }
     
     // Re-check API a cada 30 segundos
