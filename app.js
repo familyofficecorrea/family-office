@@ -2737,15 +2737,34 @@ document.addEventListener('DOMContentLoaded', async () => {
         let totalValue = 0;
         pendingCsvRows = [];
 
+        // Helper: normalize string by removing accents AND garbled encoding chars
+        const normalize = (str) => {
+            return String(str || '').toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^\x20-\x7E]/g, ''); // remove any non-ASCII chars left
+        };
+
         // Build list of valid units
         const allUnits = [];
         real_estate.forEach(b => {
+            if (b.id === 'conta_azul_geral') return; // skip virtual building
             (b.units || []).forEach(u => {
                 if (u.status !== 'disponivel') {
                     allUnits.push({ building: b, unit: u });
                 }
             });
         });
+
+        // Debug: log column names from first row
+        if (data.length > 0) {
+            const firstRow = data[0];
+            const cols = Object.keys(firstRow);
+            console.log('[CONTA AZUL] Colunas detectadas:', cols);
+            console.log('[CONTA AZUL] Colunas normalizadas:', cols.map(c => normalize(c)));
+            console.log('[CONTA AZUL] Total de linhas:', data.length);
+        }
+
+        let debugStats = { totalRows: data.length, withValue: 0, withStatus: 0, withClient: 0, accepted: 0 };
 
         data.forEach(row => {
             let clientName = '';
@@ -2755,9 +2774,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             let hasValue = false;
 
             for (let key in row) {
-                const k = key.toLowerCase();
-                if (k.includes('cliente')) clientName = String(row[key] || '').trim();
+                const k = normalize(key);
                 
+                // Client name detection
+                if (k.includes('cliente') || k.includes('nome do cliente')) {
+                    clientName = String(row[key] || '').trim();
+                }
+                
+                // Value detection (prioritize "valor recebido" columns)
                 if (k.includes('valor recebido') || k.includes('valor total recebido')) {
                     const rawVal = row[key];
                     let parsedVal = 0;
@@ -2765,7 +2789,6 @@ document.addEventListener('DOMContentLoaded', async () => {
                         parsedVal = rawVal;
                     } else {
                         const valStr = String(rawVal || '').replace('R$', '').replace(/\s/g, '').trim();
-                        // Check if it looks like Brazilian format (1.234,56) or standard (1234.56)
                         if (valStr.includes(',')) {
                             parsedVal = parseFloat(valStr.replace(/\./g, '').replace(',', '.'));
                         } else {
@@ -2778,10 +2801,14 @@ document.addEventListener('DOMContentLoaded', async () => {
                     }
                 }
                 
-                if (k.includes('vencimento')) date = String(row[key] || '');
-                if (k.includes('situa')) {
-                    const sitVal = String(row[key] || '').toLowerCase()
-                        .normalize('NFD').replace(/[\u0300-\u036f]/g, ''); // remove accents
+                // Date detection
+                if (k.includes('vencimento') || k.includes('data de vencimento')) {
+                    date = String(row[key] || '');
+                }
+                
+                // Status detection — normalize both key AND value
+                if (k.includes('situa') || k.includes('status') || k === 'situacao') {
+                    const sitVal = normalize(row[key]);
                     if (sitVal.includes('quitado') || sitVal.includes('recebido') || 
                         sitVal.includes('pago') || sitVal.includes('baixado') || 
                         sitVal.includes('liquidado')) {
@@ -2790,11 +2817,15 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
+            if (hasValue) debugStats.withValue++;
+            if (isReceived) debugStats.withStatus++;
+            if (clientName) debugStats.withClient++;
+
+            // Fallback: if no "valor recebido" found, try "valor original"
             if (!hasValue) {
-                // fallback: try 'valor original' column
                 for (let key in row) {
-                    const k = key.toLowerCase();
-                    if (k.includes('valor original') || k.includes('valor total')) {
+                    const k = normalize(key);
+                    if (k.includes('valor original') || k.includes('valor total') || k.includes('valor da parcela')) {
                         const rawVal = row[key];
                         let parsedVal = 0;
                         if (typeof rawVal === 'number') {
@@ -2815,7 +2846,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
 
+            // Fallback: if status column not found at all, treat ALL rows as received
+            // This handles encoding issues where "Situação" becomes garbled
+            if (!isReceived && hasValue && clientName) {
+                // Check if ANY key in the row even remotely matches a status column
+                let hasStatusColumn = false;
+                for (let key in row) {
+                    const k = normalize(key);
+                    if (k.includes('situa') || k.includes('status') || k === 'situacao') {
+                        hasStatusColumn = true;
+                        break;
+                    }
+                }
+                // If no status column was found at all, assume it's received
+                if (!hasStatusColumn) {
+                    isReceived = true;
+                    console.log('[CONTA AZUL] Nenhuma coluna de "Situação" encontrada — tratando como quitado.');
+                }
+            }
+
             if (value > 0 && isReceived && clientName) {
+                debugStats.accepted++;
                 const rowObj = {
                     clientName,
                     value,
@@ -2845,6 +2896,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         });
+
+        console.log('[CONTA AZUL] Estatísticas:', debugStats);
 
         // unique matching to prevent duplicate parsing
         const uniqueMatches = [];
@@ -2910,11 +2963,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             btnApply.style.display = 'block';
         } else {
             resultsEl.style.display = 'block';
-            resultsEl.innerHTML = `
-                <div style="color: var(--accent-red); padding: 8px; background: rgba(244, 67, 54, 0.1); border-radius: 6px;">
-                    <i class="fa-solid fa-circle-xmark"></i> Nenhum recebimento baixado/quitado foi encontrado no arquivo.
+            let diagHtml = `
+                <div style="color: var(--accent-red); padding: 12px; background: rgba(244, 67, 54, 0.1); border-radius: 6px;">
+                    <i class="fa-solid fa-circle-xmark"></i> <strong>Nenhum recebimento quitado encontrado.</strong>
+                    <div style="font-size: 11px; margin-top: 8px; color: var(--text-secondary);">
+                        Diagnóstico: ${debugStats.totalRows} linhas lidas, 
+                        ${debugStats.withClient} com cliente, 
+                        ${debugStats.withValue} com valor, 
+                        ${debugStats.withStatus} com status quitado.
+                    </div>
                 </div>
             `;
+            resultsEl.innerHTML = diagHtml;
             btnApply.style.display = 'none';
         }
     }
