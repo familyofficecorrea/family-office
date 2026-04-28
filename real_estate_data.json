@@ -1,0 +1,358 @@
+[
+  {
+    "address": "Rua Principal, 500",
+    "id": 1776877489359,
+    "name": "Prédio Odzun",
+    "totalUnits": 38,
+    "units": [
+      {
+        "id": 1,
+        "label": "Apt 11",
+        "notes": "Contrato até 12/2026",
+        "rentValue": 1200,
+        "saleValue": 0,
+        "status": "alugado",
+        "rentStartDate": "2025-01-01",
+        "saleDate": ""
+      },
+      {
+        "id": 2,
+        "label": "Apt 2",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 180000,
+        "status": "vendido"
+      },
+      {
+        "id": 3,
+        "label": "Apt 31",
+        "notes": "Contrato até 12/2026",
+        "rentValue": 2200,
+        "saleValue": 0,
+        "status": "alugado",
+        "rentStartDate": "2026-01-01",
+        "saleDate": ""
+      },
+      {
+        "id": 4,
+        "label": "Apt 4",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 5,
+        "label": "Apt 5",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 6,
+        "label": "Apt 6",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 7,
+        "label": "Apt 7",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 8,
+        "label": "Apt 8",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 9,
+        "label": "Apt 9",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 10,
+        "label": "Apt 10",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 11,
+        "label": "Apt 11",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 12,
+        "label": "Apt 12",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 13,
+        "label": "Apt 13",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 14,
+        "label": "Apt 14",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 15,
+        "label": "Apt 15",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 16,
+        "label": "Apt 16",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 17,
+        "label": "Apt 17",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 18,
+        "label": "Apt 18",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 19,
+        "label": "Apt 19",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 20,
+        "label": "Apt 20",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 21,
+        "label": "Apt 21",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 22,
+        "label": "Apt 22",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 23,
+        "label": "Apt 23",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 24,
+        "label": "Apt 24",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 25,
+        "label": "Apt 25",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 26,
+        "label": "Apt 26",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 27,
+        "label": "Apt 27",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 28,
+        "label": "Apt 28",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 29,
+        "label": "Apt 29",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 30,
+        "label": "Apt 30",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 31,
+        "label": "Apt 31",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 32,
+        "label": "Apt 32",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 33,
+        "label": "Apt 33",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 34,
+        "label": "Apt 83",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 317000,
+        "status": "vendido"
+      },
+      {
+        "id": 35,
+        "label": "Apt 35",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 36,
+        "label": "Apt 36",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 37,
+        "label": "Apt 37",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 38,
+        "label": "Apt 38",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      }
+    ]
+  },
+  {
+    "address": "",
+    "id": 1776877765357,
+    "name": "Galpao Lauro Vanucci",
+    "totalUnits": 4,
+    "units": [
+      {
+        "id": 1,
+        "label": "Galpao 1",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 2,
+        "label": "Galpao 2",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 3,
+        "label": "Galpao 3",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      },
+      {
+        "id": 4,
+        "label": "Galpao 4",
+        "notes": "",
+        "rentValue": 0,
+        "saleValue": 0,
+        "status": "disponivel"
+      }
+    ]
+  }
+]

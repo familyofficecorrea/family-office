@@ -521,17 +521,31 @@
                 </div>
                 <div class="input-group" id="edit-unit-expenses-group" style="display: none;">
                     <label>Despesas Recorrentes (Mensais/Anuais)</label>
-                    <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
-                        <input type="number" id="edit-unit-iptu" step="0.01" min="0" placeholder="IPTU (Anual)" style="flex: 1;">
-                        <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-secondary); width: 140px;">
-                            <input type="checkbox" id="edit-unit-iptu-included" style="width: 14px; height: 14px;"> Pago pelo Proprietário
-                        </label>
+                    <div style="margin-bottom: 10px; padding: 10px; background: rgba(0,0,0,0.15); border-radius: 8px;">
+                        <div style="display: flex; gap: 8px; margin-bottom: 6px; align-items: center;">
+                            <input type="number" id="edit-unit-iptu" step="0.01" min="0" placeholder="IPTU (Anual R$)" style="flex: 1;">
+                        </div>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-secondary);">
+                                <input type="checkbox" id="edit-unit-iptu-included" style="width: 14px; height: 14px;"> Pago pelo Proprietário
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--accent-gold);">
+                                <input type="checkbox" id="edit-unit-iptu-in-boleto" style="width: 14px; height: 14px;"> Incluso no Boleto do Inquilino
+                            </label>
+                        </div>
                     </div>
-                    <div style="display: flex; gap: 8px; margin-bottom: 8px; align-items: center;">
-                        <input type="number" id="edit-unit-condo" step="0.01" min="0" placeholder="Cond. (Mensal)" style="flex: 1;">
-                        <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-secondary); width: 140px;">
-                            <input type="checkbox" id="edit-unit-condo-included" style="width: 14px; height: 14px;"> Pago pelo Proprietário
-                        </label>
+                    <div style="margin-bottom: 10px; padding: 10px; background: rgba(0,0,0,0.15); border-radius: 8px;">
+                        <div style="display: flex; gap: 8px; margin-bottom: 6px; align-items: center;">
+                            <input type="number" id="edit-unit-condo" step="0.01" min="0" placeholder="Condomínio (Mensal R$)" style="flex: 1;">
+                        </div>
+                        <div style="display: flex; gap: 12px; flex-wrap: wrap;">
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--text-secondary);">
+                                <input type="checkbox" id="edit-unit-condo-included" style="width: 14px; height: 14px;"> Pago pelo Proprietário
+                            </label>
+                            <label style="display: flex; align-items: center; gap: 4px; font-size: 11px; cursor: pointer; color: var(--accent-gold);">
+                                <input type="checkbox" id="edit-unit-condo-in-boleto" style="width: 14px; height: 14px;"> Incluso no Boleto do Inquilino
+                            </label>
+                        </div>
                     </div>
                     <div style="display: flex; gap: 8px; align-items: center;">
                         <input type="number" id="edit-unit-adm-fee" step="0.1" min="0" max="100" placeholder="Tx. Adm (%)" style="flex: 1;">

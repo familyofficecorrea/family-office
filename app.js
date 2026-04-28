@@ -1348,13 +1348,18 @@ document.addEventListener('DOMContentLoaded', async () => {
         const rent = parseFloat(document.getElementById('edit-unit-rent').value) || 0;
         const iptu = parseFloat(document.getElementById('edit-unit-iptu').value) || 0;
         const iptuIncluded = document.getElementById('edit-unit-iptu-included').checked;
+        const iptuInBoleto = document.getElementById('edit-unit-iptu-in-boleto').checked;
         const condo = parseFloat(document.getElementById('edit-unit-condo').value) || 0;
         const condoIncluded = document.getElementById('edit-unit-condo-included').checked;
+        const condoInBoleto = document.getElementById('edit-unit-condo-in-boleto').checked;
         const admFee = parseFloat(document.getElementById('edit-unit-adm-fee').value) || 0;
 
         let deductions = 0;
         if (iptuIncluded) deductions += (iptu / 12);
         if (condoIncluded) deductions += condo;
+        // If in boleto but not paid by owner, still deduct from real yield
+        if (iptuInBoleto && !iptuIncluded) deductions += (iptu / 12);
+        if (condoInBoleto && !condoIncluded) deductions += condo;
         if (admFee) deductions += (rent * (admFee / 100));
 
         const net = Math.max(0, rent - deductions);
@@ -1365,7 +1370,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         previewEl.style.display = 'block';
     };
 
-    const netYieldInputs = ['edit-unit-rent', 'edit-unit-iptu', 'edit-unit-iptu-included', 'edit-unit-condo', 'edit-unit-condo-included', 'edit-unit-adm-fee'];
+    const netYieldInputs = ['edit-unit-rent', 'edit-unit-iptu', 'edit-unit-iptu-included', 'edit-unit-iptu-in-boleto', 'edit-unit-condo', 'edit-unit-condo-included', 'edit-unit-condo-in-boleto', 'edit-unit-adm-fee'];
     netYieldInputs.forEach(id => {
         const el = document.getElementById(id);
         if (el) {
@@ -1391,8 +1396,10 @@ document.addEventListener('DOMContentLoaded', async () => {
         
         document.getElementById('edit-unit-iptu').value = unit.iptuValue || '';
         document.getElementById('edit-unit-iptu-included').checked = !!unit.iptuIncluded;
+        document.getElementById('edit-unit-iptu-in-boleto').checked = !!unit.iptuInBoleto;
         document.getElementById('edit-unit-condo').value = unit.condoValue || '';
         document.getElementById('edit-unit-condo-included').checked = !!unit.condoIncluded;
+        document.getElementById('edit-unit-condo-in-boleto').checked = !!unit.condoInBoleto;
         document.getElementById('edit-unit-adm-fee').value = unit.admFeePercent || '';
         document.getElementById('edit-unit-contract-end').value = unit.contractEndDate || '';
         document.getElementById('edit-unit-adj-index').value = unit.adjustmentIndex || '';
@@ -1459,10 +1466,19 @@ document.addEventListener('DOMContentLoaded', async () => {
         if (!u.rentValue) return 0;
         if (!_showNetYield) return u.rentValue;
 
-        let net = u.rentValue;
+        // Base rent: if IPTU/condo are included in the boleto, the real rent
+        // is the invoice value minus those components
+        let baseRent = u.rentValue;
+        
+        let net = baseRent;
+        // Deduct expenses paid by the owner
         if (u.condoIncluded) net -= (u.condoValue || 0);
         if (u.iptuIncluded) net -= ((u.iptuValue || 0) / 12);
-        if (u.admFeePercent) net -= (u.rentValue * (u.admFeePercent / 100));
+        // If IPTU/condo are in the boleto, the received value includes them
+        // but they're not real rental income — deduct them too
+        if (u.iptuInBoleto && !u.iptuIncluded) net -= ((u.iptuValue || 0) / 12);
+        if (u.condoInBoleto && !u.condoIncluded) net -= (u.condoValue || 0);
+        if (u.admFeePercent) net -= (baseRent * (u.admFeePercent / 100));
         return Math.max(0, net);
     }
 
@@ -2569,8 +2585,10 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             unit.iptuValue = parseFloat(document.getElementById('edit-unit-iptu').value) || 0;
             unit.iptuIncluded = document.getElementById('edit-unit-iptu-included').checked;
+            unit.iptuInBoleto = document.getElementById('edit-unit-iptu-in-boleto').checked;
             unit.condoValue = parseFloat(document.getElementById('edit-unit-condo').value) || 0;
             unit.condoIncluded = document.getElementById('edit-unit-condo-included').checked;
+            unit.condoInBoleto = document.getElementById('edit-unit-condo-in-boleto').checked;
             unit.admFeePercent = parseFloat(document.getElementById('edit-unit-adm-fee').value) || 0;
             unit.contractEndDate = document.getElementById('edit-unit-contract-end').value || '';
             unit.adjustmentIndex = document.getElementById('edit-unit-adj-index').value || '';
@@ -2900,23 +2918,26 @@ document.addEventListener('DOMContentLoaded', async () => {
                     id: Math.random().toString(36).substring(7)
                 };
                 
-                let foundMatch = false;
                 const clientNameLower = clientName.toLowerCase();
                 
-                for (let i = 0; i < allUnits.length; i++) {
-                    const { building, unit } = allUnits[i];
+                // Find ALL units matching this tenant (supports multi-unit tenants)
+                const matchingUnits = allUnits.filter(({ unit }) => {
                     const tenantMatch = unit.tenantName && unit.tenantName.toLowerCase() === clientNameLower;
                     const labelMatch = clientNameLower.includes(unit.label.toLowerCase());
-                    
-                    if (tenantMatch || labelMatch) {
-                        matchedUnits.push({ ...rowObj, building, unit });
-                        foundMatch = true;
-                        totalValue += value;
-                        break;
-                    }
-                }
+                    return tenantMatch || labelMatch;
+                });
 
-                if (!foundMatch) {
+                if (matchingUnits.length > 0) {
+                    // Group: one payment covers multiple units
+                    matchedUnits.push({ 
+                        ...rowObj, 
+                        building: matchingUnits[0].building, 
+                        unit: matchingUnits[0].unit,
+                        allUnits: matchingUnits, // all matched units for this tenant
+                        isGrouped: matchingUnits.length > 1
+                    });
+                    totalValue += value;
+                } else {
                     unmatchedRows.push(rowObj);
                 }
             }
@@ -2928,7 +2949,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         const uniqueMatches = [];
         const seen = new Set();
         matchedUnits.forEach(m => {
-            const key = `${m.unit.id}-${m.value}-${m.date}`;
+            const key = `${m.clientName.toLowerCase()}-${m.value}-${m.date}`;
             if (!seen.has(key)) {
                 seen.add(key);
                 uniqueMatches.push(m);
@@ -2947,8 +2968,14 @@ document.addEventListener('DOMContentLoaded', async () => {
             `;
             
             if (uniqueMatches.length > 0) {
-                html += `<ul style="padding-left: 20px; margin-bottom: 12px; color: var(--text-secondary); max-height: 100px; overflow-y: auto;">
-                    ${uniqueMatches.map(m => `<li>${m.building.name} - ${m.unit.label} (${formatCurrency(m.value)}) <span style="font-size: 10px; color: var(--accent-green);"><i class="fa-solid fa-link"></i> Vinculado</span></li>`).join('')}
+                html += `<ul style="padding-left: 20px; margin-bottom: 12px; color: var(--text-secondary); max-height: 140px; overflow-y: auto;">
+                    ${uniqueMatches.map(m => {
+                        if (m.isGrouped && m.allUnits) {
+                            const unitNames = m.allUnits.map(u => `${u.building.name} - ${u.unit.label}`).join(', ');
+                            return `<li>${m.clientName} → <strong>${m.allUnits.length} unidades</strong> (${unitNames}) — ${formatCurrency(m.value)} <span style="font-size: 10px; color: var(--accent-green);"><i class="fa-solid fa-layer-group"></i> Agrupado</span></li>`;
+                        }
+                        return `<li>${m.building.name} - ${m.unit.label} (${formatCurrency(m.value)}) <span style="font-size: 10px; color: var(--accent-green);"><i class="fa-solid fa-link"></i> Vinculado</span></li>`;
+                    }).join('')}
                 </ul>`;
             }
 
@@ -3062,15 +3089,29 @@ document.addEventListener('DOMContentLoaded', async () => {
             pendingCsvRows.forEach(row => {
                 if (row.isGeneral) {
                     countProcessed++;
+                } else if (row.allUnits && row.isGrouped) {
+                    // Grouped tenant: payment covers multiple units
+                    row.allUnits.forEach(({ unit }) => {
+                        if (unit.status === 'vendido') {
+                            unit.paidInstallments = (unit.paidInstallments || 0) + 1;
+                            if (unit.paidInstallments > unit.installmentCount) {
+                                unit.paidInstallments = unit.installmentCount;
+                            }
+                        }
+                        // Ensure tenant name is linked
+                        if (!unit.tenantName) unit.tenantName = row.clientName;
+                    });
+                    countProcessed++;
                 } else if (row.unit) {
                     const u = row.unit;
                     if (u.status === 'vendido') {
-                        // Advance paid installments
                         u.paidInstallments = (u.paidInstallments || 0) + 1;
                         if (u.paidInstallments > u.installmentCount) {
                             u.paidInstallments = u.installmentCount;
                         }
                     }
+                    // Ensure tenant name is linked
+                    if (!u.tenantName) u.tenantName = row.clientName;
                     countProcessed++;
                 }
             });
