@@ -344,11 +344,14 @@
 
                 <div class="section-header" style="margin-bottom: 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px;">
                     <h2>Meus Imóveis</h2>
-                    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-                        <button class="btn-primary" id="btn-import-conta-azul" style="width: auto; margin-bottom: 0; padding: 10px 16px; background-color: #2684FF;" onclick="document.getElementById('modal-import-csv').classList.add('visible')">
-                            <i class="fa-solid fa-file-csv"></i> Importar Conta Azul
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <button class="btn-secondary" onclick="window.openBatchEditModal()" style="font-size: 0.8rem; padding: 8px 16px;">
+                            <i class="fa-solid fa-table-list"></i> Edição em Lote
                         </button>
-                        <button class="btn-primary" id="btn-add-building" style="width: auto; margin-bottom: 0; padding: 10px 16px;" onclick="document.getElementById('modal-add-building').classList.add('visible')">
+                        <button class="btn-secondary" onclick="document.getElementById('modal-import-csv').classList.add('visible')" style="font-size: 0.8rem; padding: 8px 16px;">
+                            <i class="fa-solid fa-file-import"></i> Importar Conta Azul
+                        </button>
+                        <button class="btn-primary" onclick="window.openAddImovelModal()" style="font-size: 0.8rem; padding: 8px 16px;">
                             <i class="fa-solid fa-plus"></i> Novo Imóvel
                         </button>
                     </div>
@@ -695,6 +698,46 @@
                 </button>
                 <button class="btn-primary" id="btn-apply-csv" style="display: none; margin-top: 8px; background-color: var(--accent-green);">
                     <i class="fa-solid fa-check"></i> Aplicar e Salvar
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal: Edição em Lote (Imobiliário) -->
+    <div id="modal-batch-edit" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 95%; width: 1200px; max-height: 90vh; display: flex; flex-direction: column;">
+            <div class="section-header" style="margin-bottom: 20px;">
+                <div>
+                    <h3>Edição em Lote de Unidades</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary);">Configure rapidamente inquilinos, impostos e taxas de todas as unidades.</p>
+                </div>
+                <button class="btn-close" type="button" onclick="document.getElementById('modal-batch-edit').classList.remove('visible')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div style="flex: 1; overflow: auto; margin-bottom: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                <table class="premium-table" style="min-width: 1100px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 150px;">Imóvel / Unidade</th>
+                            <th>Inquilino (Conta Azul)</th>
+                            <th style="width: 110px;">Aluguel (R$)</th>
+                            <th style="width: 100px;">IPTU Anual</th>
+                            <th style="width: 30px;" title="IPTU Incluso no Boleto?">Inc?</th>
+                            <th style="width: 100px;">Condo Mensal</th>
+                            <th style="width: 30px;" title="Condomínio Incluso no Boleto?">Inc?</th>
+                            <th style="width: 80px;">Tx. Adm %</th>
+                        </tr>
+                    </thead>
+                    <tbody id="batch-edit-body">
+                        <!-- Gerado via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button class="btn-secondary" onclick="document.getElementById('modal-batch-edit').classList.remove('visible')">Cancelar</button>
+                <button class="btn-primary" onclick="window.saveBatchEdit()">
+                    <i class="fa-solid fa-save"></i> Salvar Todas as Alterações
                 </button>
             </div>
         </div>

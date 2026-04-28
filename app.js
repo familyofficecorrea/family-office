@@ -2928,13 +2928,27 @@ document.addEventListener('DOMContentLoaded', async () => {
                 });
 
                 if (matchingUnits.length > 0) {
+                    // Calculate expected total sum for these units
+                    let expectedSum = 0;
+                    matchingUnits.forEach(({ unit }) => {
+                        expectedSum += (unit.rentValue || 0);
+                        if (unit.iptuInBoleto) expectedSum += ((unit.iptuValue || 0) / 12);
+                        if (unit.condoInBoleto) expectedSum += (unit.condoValue || 0);
+                    });
+
+                    const diff = Math.abs(value - expectedSum);
+                    const isMismatch = diff > 2; // threshold of R$ 2,00 for rounding
+
                     // Group: one payment covers multiple units
                     matchedUnits.push({ 
                         ...rowObj, 
                         building: matchingUnits[0].building, 
                         unit: matchingUnits[0].unit,
                         allUnits: matchingUnits, // all matched units for this tenant
-                        isGrouped: matchingUnits.length > 1
+                        isGrouped: matchingUnits.length > 1,
+                        expectedSum,
+                        isMismatch,
+                        mismatchMsg: isMismatch ? `Divergência: Recebido ${formatCurrency(value)} (Esperado ${formatCurrency(expectedSum)})` : ''
                     });
                     totalValue += value;
                 } else {
@@ -2970,11 +2984,24 @@ document.addEventListener('DOMContentLoaded', async () => {
             if (uniqueMatches.length > 0) {
                 html += `<ul style="padding-left: 20px; margin-bottom: 12px; color: var(--text-secondary); max-height: 140px; overflow-y: auto;">
                     ${uniqueMatches.map(m => {
+                        let warningHtml = '';
+                        if (m.isMismatch) {
+                            warningHtml = `<div style="font-size: 10px; color: var(--accent-gold); margin-top: 2px;"><i class="fa-solid fa-circle-exclamation"></i> ${m.mismatchMsg}</div>`;
+                        }
+
                         if (m.isGrouped && m.allUnits) {
                             const unitNames = m.allUnits.map(u => `${u.building.name} - ${u.unit.label}`).join(', ');
-                            return `<li>${m.clientName} → <strong>${m.allUnits.length} unidades</strong> (${unitNames}) — ${formatCurrency(m.value)} <span style="font-size: 10px; color: var(--accent-green);"><i class="fa-solid fa-layer-group"></i> Agrupado</span></li>`;
+                            return `<li style="margin-bottom: 8px;">
+                                ${m.clientName} → <strong>${m.allUnits.length} unidades</strong> (${unitNames}) — ${formatCurrency(m.value)} 
+                                <span style="font-size: 10px; color: var(--accent-green);"><i class="fa-solid fa-layer-group"></i> Agrupado</span>
+                                ${warningHtml}
+                            </li>`;
                         }
-                        return `<li>${m.building.name} - ${m.unit.label} (${formatCurrency(m.value)}) <span style="font-size: 10px; color: var(--accent-green);"><i class="fa-solid fa-link"></i> Vinculado</span></li>`;
+                        return `<li style="margin-bottom: 8px;">
+                            ${m.building.name} - ${m.unit.label} (${formatCurrency(m.value)}) 
+                            <span style="font-size: 10px; color: var(--accent-green);"><i class="fa-solid fa-link"></i> Vinculado</span>
+                            ${warningHtml}
+                        </li>`;
                     }).join('')}
                 </ul>`;
             }
