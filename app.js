@@ -2657,8 +2657,10 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // ─── Conta Azul Integration ──────────────────────────────────────────────
     const btnProcessCsv = document.getElementById('btn-process-csv');
+    console.log('[CONTA AZUL] btn-process-csv encontrado:', !!btnProcessCsv);
     if (btnProcessCsv) {
         btnProcessCsv.addEventListener('click', () => {
+            console.log('[CONTA AZUL] Botão clicado!');
             const fileInput = document.getElementById('csv-file-input');
             if (!fileInput.files.length) {
                 alert('Por favor, selecione um arquivo do Conta Azul (.xls, .xlsx ou .csv).');
@@ -2667,6 +2669,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             
             const file = fileInput.files[0];
             const fileName = file.name.toLowerCase();
+            console.log('[CONTA AZUL] Arquivo selecionado:', file.name, 'Tamanho:', file.size, 'Tipo:', file.type);
             const btnOriginalText = btnProcessCsv.innerHTML;
             btnProcessCsv.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...';
             btnProcessCsv.disabled = true;
@@ -2678,6 +2681,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
                 // ── Excel: usar SheetJS ──
+                console.log('[CONTA AZUL] Tipo detectado: Excel. XLSX lib:', typeof XLSX);
                 if (typeof XLSX === 'undefined') {
                     alert('Erro: Biblioteca de leitura de Excel não carregada. Recarregue a página.');
                     resetBtn();
@@ -2685,19 +2689,29 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
                 const reader = new FileReader();
                 reader.onload = function(e) {
+                    console.log('[CONTA AZUL] FileReader onload disparado, bytes:', e.target.result.byteLength);
                     try {
                         const data = new Uint8Array(e.target.result);
+                        console.log('[CONTA AZUL] Lendo workbook...');
                         const workbook = XLSX.read(data, { type: 'array' });
                         const firstSheet = workbook.SheetNames[0];
+                        console.log('[CONTA AZUL] Sheet:', firstSheet, 'Total sheets:', workbook.SheetNames.length);
                         const jsonData = XLSX.utils.sheet_to_json(workbook.Sheets[firstSheet], { defval: '' });
+                        console.log('[CONTA AZUL] Linhas parseadas:', jsonData.length);
+                        if (jsonData.length > 0) {
+                            console.log('[CONTA AZUL] Colunas:', Object.keys(jsonData[0]));
+                            console.log('[CONTA AZUL] Primeira linha:', JSON.stringify(jsonData[0]).substring(0, 300));
+                        }
                         resetBtn();
                         processContaAzulData(jsonData);
                     } catch (err) {
+                        console.error('[CONTA AZUL] ERRO ao ler Excel:', err);
                         alert('Erro ao ler o arquivo Excel: ' + err.message);
                         resetBtn();
                     }
                 };
-                reader.onerror = function() {
+                reader.onerror = function(err) {
+                    console.error('[CONTA AZUL] FileReader ERRO:', err);
                     alert('Erro ao abrir o arquivo.');
                     resetBtn();
                 };
@@ -2705,15 +2719,18 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             } else {
                 // ── CSV: usar PapaParse ──
+                console.log('[CONTA AZUL] Tipo detectado: CSV. Papa lib:', typeof Papa);
                 if (typeof Papa !== 'undefined') {
                     Papa.parse(file, {
                         header: true,
                         skipEmptyLines: true,
                         complete: function(results) {
+                            console.log('[CONTA AZUL] CSV parseado, linhas:', results.data.length);
                             resetBtn();
                             processContaAzulData(results.data);
                         },
                         error: function(err) {
+                            console.error('[CONTA AZUL] ERRO CSV:', err);
                             alert('Erro ao ler o arquivo CSV: ' + err.message);
                             resetBtn();
                         }
@@ -2724,6 +2741,7 @@ document.addEventListener('DOMContentLoaded', async () => {
                 }
             }
         });
+        console.log('[CONTA AZUL] Event listener registrado com sucesso.');
     }
 
     let pendingCsvRows = [];
