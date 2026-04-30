@@ -175,13 +175,14 @@ function refreshUI() {
 }
 
 // ─── Core UI Update Functions (Global Scope) ─────────────────────────────────
-window.updateTotalEquity = () => {
+function updateTotalEquity() {
     const totalFinanceiro = assets.reduce((sum, a) => sum + (a.simulatedCurrent || a.value), 0);
     const el = document.getElementById('total-equity');
     if (el) el.innerHTML = formatCurrency(totalFinanceiro);
-};
+}
+window.updateTotalEquity = updateTotalEquity;
 
-window.updateAssetListUI = () => {
+function updateAssetListUI() {
     const assetList = document.getElementById('asset-list');
     if (!assetList) return;
     if (assets.length === 0) {
@@ -202,9 +203,9 @@ window.updateAssetListUI = () => {
         `;
         assetList.appendChild(li);
     });
-};
+window.updateAssetListUI = updateAssetListUI;
 
-window.updateDetailedPortfolioUI = () => {
+function updateDetailedPortfolioUI() {
     const tbody = document.getElementById('detailed-asset-list');
     if (!tbody) return;
     if (assets.length === 0) {
@@ -238,9 +239,10 @@ window.updateDetailedPortfolioUI = () => {
         `;
         tbody.appendChild(tr);
     });
-};
+}
+window.updateDetailedPortfolioUI = updateDetailedPortfolioUI;
 
-window.updateMeusAtivosUI = () => {
+function updateMeusAtivosUI() {
     const accordionContainer = document.getElementById('accordion-container');
     if (!accordionContainer) return;
     const categories = {};
@@ -339,34 +341,48 @@ window.updateMeusAtivosUI = () => {
             });
         }
     }
-};
+}
+window.updateMeusAtivosUI = updateMeusAtivosUI;
 
-window.calculateUnitStrategicMetrics = (unit) => {
+function calculateUnitStrategicMetrics(unit) {
     let grossIncome = 0;
-    if (unit.status === 'alugado') grossIncome = unit.rentValue || 0;
-    else if (unit.status === 'vendido') {
+    const status = unit.status;
+    if (status === 'alugado') grossIncome = getEffectiveRent(unit);
+    else if (status === 'vendido') {
         const financed = (unit.saleValue || 0) - (unit.downPayment || 0);
-        if (unit.installmentCount > 0 && unit.paidInstallments < unit.installmentCount) grossIncome = financed / unit.installmentCount;
+        grossIncome = unit.installmentCount > 0 ? (financed / unit.installmentCount) : 0;
     }
-    const iptu = unit.iptuMonthly || (unit.iptuValue ? unit.iptuValue / 12 : 0);
-    const condo = unit.condoMonthly || (unit.condoValue || 0);
-    const adm = unit.admFeeFixed || (unit.rentValue && unit.admFeePercent ? unit.rentValue * (unit.admFeePercent / 100) : 0);
-    const totalCost = iptu + condo + adm + (unit.insuranceMonthly || 0) + (unit.maintenanceAvgMonthly || 0);
+    const totalCost = (unit.condoMonthly || 0) + ((unit.iptuValue || 0) / 12) + (unit.insuranceMonthly || 0) + (unit.maintenanceAvgMonthly || 0);
     const netIncomeMonthly = grossIncome - totalCost;
     const netIncomeAnnual = netIncomeMonthly * 12;
-    const yieldAnual = (unit.marketValue && unit.marketValue > 0) ? (netIncomeAnnual / unit.marketValue) * 100 : 0;
-    const upsideScore = (unit.upsidePotential || 3) * 20;
-    const docScore = (unit.docQuality || 5) * 20;
-    const liqScore = (unit.liquidityLevel || 3) * 20;
-    const legalRiskScore = (6 - (unit.riskLegal || 1)) * 20;
-    const painScore = (6 - (unit.opPain || 1)) * 20;
-    const score = (upsideScore * 0.25) + (docScore * 0.20) + (liqScore * 0.20) + (legalRiskScore * 0.20) + (painScore * 0.15);
-    let classLabel = 'D';
-    if (score >= 85) classLabel = 'A'; else if (score >= 70) classLabel = 'B'; else if (score >= 50) classLabel = 'C';
-    unit.metrics = { grossIncomeMonthly: grossIncome, totalCostMonthly: totalCost, netIncomeMonthly: netIncomeMonthly, netIncomeAnnual: netIncomeAnnual, yieldAnnual: yieldAnual, score: score, class: classLabel };
-};
+    const marketValue = unit.marketValue || unit.saleValue || (unit.rentValue ? unit.rentValue * 150 : 0);
+    const yieldAnnual = marketValue > 0 ? (netIncomeAnnual / marketValue) * 100 : 0;
+    const score = (unit.docQuality || 5) * 0.3 + (unit.upsidePotential || 3) * 0.4 + (5 - (unit.opPain || 1)) * 0.3;
+    let classLabel = 'C';
+    if (score >= 4.2) classLabel = 'A+';
+    else if (score >= 3.8) classLabel = 'A';
+    else if (score >= 3.2) classLabel = 'B';
+    unit.metrics = { grossIncomeMonthly: grossIncome, totalCostMonthly: totalCost, netIncomeMonthly: netIncomeMonthly, netIncomeAnnual: netIncomeAnnual, yieldAnnual: yieldAnnual, score: score, class: classLabel };
+}
+window.calculateUnitStrategicMetrics = calculateUnitStrategicMetrics;
 
-window.updateRealEstateUI = () => {
+let _showNetYield = false;
+
+function getEffectiveRent(u) {
+    if (!u.rentValue) return 0;
+    if (!_showNetYield) return u.rentValue;
+    let baseRent = u.rentValue;
+    let net = baseRent;
+    if (u.condoIncluded) net -= (u.condoValue || 0);
+    if (u.iptuIncluded) net -= ((u.iptuValue || 0) / 12);
+    if (u.iptuInBoleto && !u.iptuIncluded) net -= ((u.iptuValue || 0) / 12);
+    if (u.condoInBoleto && !u.condoIncluded) net -= (u.condoValue || 0);
+    if (u.admFeePercent) net -= (baseRent * (u.admFeePercent / 100));
+    return Math.max(0, net);
+}
+window.getEffectiveRent = getEffectiveRent;
+
+function updateRealEstateUI() {
     const grid = document.getElementById('re-buildings-grid');
     if (!grid) return;
     const visibleBuildings = real_estate.filter(b => b.id !== 'conta_azul_geral');
@@ -381,12 +397,13 @@ window.updateRealEstateUI = () => {
     if (typeof updateUpcomingInstallmentsUI === 'function') updateUpcomingInstallmentsUI();
     if (typeof updateContractAlertsUI === 'function') updateContractAlertsUI();
     updateStrategicDashboard();
-};
+}
+window.updateRealEstateUI = updateRealEstateUI;
 
 let stratTypeChart = null;
 let stratRegionChart = null;
 
-window.updateStrategicDashboard = () => {
+function updateStrategicDashboard() {
     const tab = document.getElementById('gestao-patrimonial');
     if (!tab || !tab.classList.contains('active')) return;
     let allUnits = [];
@@ -435,7 +452,8 @@ window.updateStrategicDashboard = () => {
             bFilter.appendChild(opt);
         });
     }
-};
+}
+window.updateStrategicDashboard = updateStrategicDashboard;
 
 function renderStrategicCharts(units) {
     const typeCtx = document.getElementById('chart-strat-type');
@@ -1562,27 +1580,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    let _showNetYield = false;
 
-    function getEffectiveRent(u) {
-        if (!u.rentValue) return 0;
-        if (!_showNetYield) return u.rentValue;
-
-        // Base rent: if IPTU/condo are included in the boleto, the real rent
-        // is the invoice value minus those components
-        let baseRent = u.rentValue;
-        
-        let net = baseRent;
-        // Deduct expenses paid by the owner
-        if (u.condoIncluded) net -= (u.condoValue || 0);
-        if (u.iptuIncluded) net -= ((u.iptuValue || 0) / 12);
-        // If IPTU/condo are in the boleto, the received value includes them
-        // but they're not real rental income — deduct them too
-        if (u.iptuInBoleto && !u.iptuIncluded) net -= ((u.iptuValue || 0) / 12);
-        if (u.condoInBoleto && !u.condoIncluded) net -= (u.condoValue || 0);
-        if (u.admFeePercent) net -= (baseRent * (u.admFeePercent / 100));
-        return Math.max(0, net);
-    }
 
     function getOccupancyInfo(building) {
         const units = building.units || [];
