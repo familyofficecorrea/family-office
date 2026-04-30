@@ -1052,7 +1052,7 @@ document.addEventListener('DOMContentLoaded', async () => {
     };
 
     // ─── UI Updates ──────────────────────────────────────────────────────
-    const updateAssetListUI = () => {
+    window.updateAssetListUI = () => {
         if (assets.length === 0) {
             assetList.innerHTML = '<li class="empty-state">Nenhum ativo cadastrado.</li>';
             return;
@@ -1075,7 +1075,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
-    const updateDetailedPortfolioUI = () => {
+    window.updateDetailedPortfolioUI = () => {
         const tbody = document.getElementById('detailed-asset-list');
         if (!tbody) return;
 
@@ -1124,7 +1124,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     };
 
-    const updateMeusAtivosUI = () => {
+    window.updateMeusAtivosUI = () => {
         const accordionContainer = document.getElementById('accordion-container');
         if (!accordionContainer) return;
 
