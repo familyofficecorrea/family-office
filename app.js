@@ -306,6 +306,38 @@ window.updateMeusAtivosUI = () => {
         allocationChart.data.datasets[0].data = chartData;
         allocationChart.data.datasets[0].backgroundColor = chartColors;
         allocationChart.update();
+    } else {
+        const doughnutCtx = document.getElementById('allocationChart');
+        if (doughnutCtx) {
+            allocationChart = new Chart(doughnutCtx.getContext('2d'), {
+                type: 'doughnut',
+                data: {
+                    labels: chartLabels,
+                    datasets: [{
+                        data: chartData,
+                        backgroundColor: chartColors,
+                        borderWidth: 0,
+                        hoverOffset: 4
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: '75%',
+                    plugins: {
+                        legend: { position: 'right', labels: { color: '#9BA1A6', usePointStyle: true, boxWidth: 8, padding: 20 } },
+                        tooltip: { backgroundColor: 'rgba(19, 23, 34, 0.9)', titleColor: '#FFFFFF', bodyColor: '#FFFFFF', padding: 12,
+                            callbacks: {
+                                label: function(context) {
+                                    const val = context.parsed;
+                                    return ' ' + formatCurrency(val);
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+        }
     }
 };
 
@@ -1309,130 +1341,6 @@ document.addEventListener('DOMContentLoaded', async () => {
             updateDetailedPortfolioUI();
             updateTotalEquity();
             if (typeof updateRentabilitySummary === 'function') updateRentabilitySummary();
-        }
-    };
-
-            'Renda Fixa': '#00C853',
-            'Renda Variável': '#2962FF',
-            'Fundos Imobiliários': '#FF3D57',
-            'Exterior': '#FFA000',
-            'Criptoativos': '#9C27B0',
-            'Outros': '#9BA1A6'
-        };
-
-        const chartLabels = [];
-        const chartData = [];
-        const chartBackgrounds = [];
-
-        Object.keys(categories).forEach(cat => {
-            const catsAssets = categories[cat];
-            const catTotalVal = catsAssets.reduce((sum, a) => sum + (a.simulatedCurrent || a.value), 0);
-            
-            chartLabels.push(cat);
-            chartData.push(catTotalVal);
-            chartBackgrounds.push(categoryColors[cat] || categoryColors['Outros']);
-            
-            const item = document.createElement('div');
-            item.className = 'accordion-item';
-
-            let rowsHtml = '';
-            catsAssets.forEach(a => {
-                const invested = a.value || (a.quantity * a.avgPrice);
-                const current = a.simulatedCurrent || invested;
-                const profitVal = current - invested;
-                const profitPerc = invested > 0 ? (profitVal / invested) * 100 : 0;
-                let color = '#fff';
-                let sign = '';
-                if(profitPerc > 0) { color = 'var(--accent-green)'; sign = '+'; }
-                else if(profitPerc < 0) { color = '#FF3D57'; }
-                
-                rowsHtml += `
-                    <div style="display: flex; justify-content: space-between; padding: 16px 20px; border-bottom: 1px solid rgba(255,255,255,0.05); align-items: center; background-color: var(--bg-primary);">
-                        <div>
-                            <span style="color: #fff; font-weight: 600;">${a.ticker || a.name}</span>
-                            <div style="font-size: 11px; color: var(--text-secondary); margin-top: 2px;">${a.quantity ? a.quantity + ' cotas · PM: ' + formatCurrency(a.avgPrice) : ''}</div>
-                        </div>
-                        <div style="text-align: right;">
-                            <span style="color: var(--text-secondary); font-size: 12px;">Rentabilidade</span><br>
-                            <span style="font-size: 13px; color: ${color}; font-weight: 500;">${sign}${profitPerc.toFixed(2)}%</span>
-                        </div>
-                        <div style="display: flex; align-items: center; gap: 16px;">
-                            <span style="min-width: 120px; text-align: right; color: ${color}; font-weight: 600;">${formatCurrency(current)}</span>
-                            <button class="btn-delete-asset" data-id="${a.id}" style="background: none; border: none; color: #FF3D57; cursor: pointer; padding: 4px; transition: 0.2s;" title="Excluir Ativo">
-                                <i class="fa-solid fa-trash-can"></i>
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-
-            item.innerHTML = `
-                <div class="accordion-header">
-                    <div class="accordion-title">
-                        <div class="cat-indicator" style="background-color: ${categoryColors[cat] || categoryColors['Outros']}"></div>
-                        ${cat}
-                    </div>
-                    <div class="accordion-stats">
-                        <span style="font-weight: 600; color: #fff;">${formatCurrency(catTotalVal)}</span>
-                        <i class="fa-solid fa-chevron-down" style="color: var(--text-secondary); transition: 0.3s;"></i>
-                    </div>
-                </div>
-                <div class="accordion-body">
-                    ${rowsHtml}
-                </div>
-            `;
-            
-            const header = item.querySelector('.accordion-header');
-            header.addEventListener('click', () => { item.classList.toggle('active'); });
-            
-            accordionContainer.appendChild(item);
-
-            const deleteBtns = item.querySelectorAll('.btn-delete-asset');
-            deleteBtns.forEach(btn => {
-                btn.addEventListener('click', (e) => {
-                    e.stopPropagation();
-                    const idToDelete = parseInt(btn.getAttribute('data-id'));
-                    if (window.deleteAsset) window.deleteAsset(idToDelete);
-                });
-            });
-        });
-
-        // Doughnut Chart
-        const doughnutCtx = document.getElementById('allocationChart');
-        if(allocationChart) {
-            allocationChart.data.labels = chartLabels;
-            allocationChart.data.datasets[0].data = chartData;
-            allocationChart.data.datasets[0].backgroundColor = chartBackgrounds;
-            allocationChart.update();
-        } else if(doughnutCtx) {
-            allocationChart = new Chart(doughnutCtx.getContext('2d'), {
-                type: 'doughnut',
-                data: {
-                    labels: chartLabels,
-                    datasets: [{
-                        data: chartData,
-                        backgroundColor: chartBackgrounds,
-                        borderWidth: 0,
-                        hoverOffset: 4
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: false,
-                    cutout: '75%',
-                    plugins: {
-                        legend: { position: 'right', labels: { color: '#9BA1A6', usePointStyle: true, boxWidth: 8, padding: 20 } },
-                        tooltip: { backgroundColor: 'rgba(19, 23, 34, 0.9)', titleColor: '#FFFFFF', bodyColor: '#FFFFFF', padding: 12,
-                            callbacks: {
-                                label: function(context) {
-                                    const val = context.parsed;
-                                    return ' ' + formatCurrency(val);
-                                }
-                            }
-                        }
-                    }
-                }
-            });
         }
     };
 
