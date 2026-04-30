@@ -164,14 +164,281 @@ async function pollForUpdates() {
 
 // ─── Atualizar toda a UI de uma vez ──────────────────────────────────────────
 function refreshUI() {
-    if (typeof buildChartSeries === 'function') buildChartSeries();
-    if (typeof filterChartData === 'function') filterChartData();
-    if (typeof updateAssetListUI === 'function') updateAssetListUI();
-    if (typeof updateMeusAtivosUI === 'function') updateMeusAtivosUI();
-    if (typeof updateDetailedPortfolioUI === 'function') updateDetailedPortfolioUI();
-    if (typeof updateTotalEquity === 'function') updateTotalEquity();
+    buildChartSeries();
+    filterChartData();
+    updateAssetListUI();
+    updateMeusAtivosUI();
+    updateDetailedPortfolioUI();
+    updateTotalEquity();
     if (typeof updateRentabilitySummary === 'function') updateRentabilitySummary();
-    if (typeof updateRealEstateUI === 'function') updateRealEstateUI();
+    updateRealEstateUI();
+}
+
+// ─── Core UI Update Functions (Global Scope) ─────────────────────────────────
+window.updateTotalEquity = () => {
+    const totalFinanceiro = assets.reduce((sum, a) => sum + (a.simulatedCurrent || a.value), 0);
+    const el = document.getElementById('total-equity');
+    if (el) el.innerHTML = formatCurrency(totalFinanceiro);
+};
+
+window.updateAssetListUI = () => {
+    const assetList = document.getElementById('asset-list');
+    if (!assetList) return;
+    if (assets.length === 0) {
+        assetList.innerHTML = '<li class="empty-state">Nenhum ativo cadastrado.</li>';
+        return;
+    }
+    assetList.innerHTML = '';
+    const sortedAssets = [...assets].reverse();
+    sortedAssets.forEach(asset => {
+        const li = document.createElement('li');
+        li.className = 'asset-item';
+        li.innerHTML = `
+            <div>
+                <div class="asset-name">${asset.ticker || asset.name}</div>
+                <span class="asset-date">${asset.quantity ? asset.quantity + ' cotas' : ''} · ${formatDate(asset.lastDate)}</span>
+            </div>
+            <div class="asset-val">${formatCurrency(asset.simulatedCurrent || asset.value)}</div>
+        `;
+        assetList.appendChild(li);
+    });
+};
+
+window.updateDetailedPortfolioUI = () => {
+    const tbody = document.getElementById('detailed-asset-list');
+    if (!tbody) return;
+    if (assets.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="7" class="empty-state" style="text-align: center; color: var(--text-secondary); padding: 20px;">Nenhum ativo adicionado ainda.</td></tr>`;
+        return;
+    }
+    tbody.innerHTML = ''; 
+    const sortedAssets = [...assets].sort((a, b) => (b.simulatedCurrent || b.value) - (a.simulatedCurrent || a.value));
+    sortedAssets.forEach(asset => {
+        const tr = document.createElement('tr');
+        const invested = asset.value || (asset.quantity * asset.avgPrice);
+        const current = asset.simulatedCurrent || invested;
+        const profitValue = current - invested;
+        const profitPercentage = invested > 0 ? (profitValue / invested) * 100 : 0;
+        let pillClass = 'neutral';
+        let formattedProfit = '0.00%';
+        if (profitPercentage > 0.01) { pillClass = 'positive'; formattedProfit = '+' + profitPercentage.toFixed(2) + '%'; }
+        else if (profitPercentage < -0.01) { pillClass = 'negative'; formattedProfit = profitPercentage.toFixed(2) + '%'; }
+        const currentPriceDisplay = asset.currentPrice ? formatCurrency(asset.currentPrice) : '<span class="price-loading"></span>';
+        tr.innerHTML = `
+            <td style="font-weight: 600; color: #fff;">
+                <div>${asset.ticker || asset.name}</div>
+                <div style="font-size: 11px; color: var(--text-secondary); font-weight: 400; margin-top: 2px;">${asset.name !== asset.ticker ? asset.name : ''}</div>
+            </td>
+            <td style="color: var(--text-secondary);">${asset.quantity ? asset.quantity.toLocaleString('pt-BR') : '—'}</td>
+            <td>${formatCurrency(asset.avgPrice || 0)}</td>
+            <td>${formatCurrency(invested)}</td>
+            <td>${currentPriceDisplay}</td>
+            <td><span class="profit-pill ${pillClass}">${formattedProfit}</span></td>
+            <td style="font-weight: 600; color: ${pillClass === 'positive' ? 'var(--accent-green)' : (pillClass === 'negative' ? '#FF3D57' : '#fff')}">${formatCurrency(current)}</td>
+        `;
+        tbody.appendChild(tr);
+    });
+};
+
+window.updateMeusAtivosUI = () => {
+    const accordionContainer = document.getElementById('accordion-container');
+    if (!accordionContainer) return;
+    const categories = {};
+    assets.forEach(asset => {
+        const cat = asset.category || 'Outros';
+        if (!categories[cat]) categories[cat] = [];
+        categories[cat].push(asset);
+    });
+    if (assets.length === 0) {
+        accordionContainer.innerHTML = '<div class="empty-state" style="padding: 20px; text-align: center; color: var(--text-secondary);">Nenhum ativo configurado.</div>';
+        if (allocationChart) {
+            allocationChart.data.labels = [];
+            allocationChart.data.datasets[0].data = [];
+            allocationChart.update();
+        }
+        return;
+    }
+    accordionContainer.innerHTML = '';
+    const categoryColors = { 'Renda Fixa': '#2962FF', 'Renda Variável': '#00C853', 'Fundos Imobiliários': '#FFA000', 'Exterior': '#FF3D57', 'Criptoativos': '#9C27B0', 'Outros': '#78909C' };
+    const chartLabels = [];
+    const chartData = [];
+    const chartColors = [];
+    Object.keys(categories).forEach(catName => {
+        const catAssets = categories[catName];
+        const catTotal = catAssets.reduce((sum, a) => sum + (a.simulatedCurrent || a.value), 0);
+        chartLabels.push(catName);
+        chartData.push(catTotal);
+        chartColors.push(categoryColors[catName] || categoryColors['Outros']);
+        const section = document.createElement('div');
+        section.className = 'accordion-section';
+        section.innerHTML = `
+            <div class="accordion-header">
+                <div class="accordion-title">
+                    <span class="category-dot" style="background: ${categoryColors[catName] || categoryColors['Outros']}"></span>
+                    ${catName}
+                </div>
+                <div class="accordion-info">
+                    <span class="category-total">${formatCurrency(catTotal)}</span>
+                    <i class="fa-solid fa-chevron-down"></i>
+                </div>
+            </div>
+            <div class="accordion-content">
+                <table class="premium-table small">
+                    <thead><tr><th>Ativo</th><th>Cotas</th><th>Valor Atual</th></tr></thead>
+                    <tbody>
+                        ${catAssets.map(a => `
+                            <tr>
+                                <td>${a.ticker || a.name}</td>
+                                <td>${a.quantity || '—'}</td>
+                                <td>${formatCurrency(a.simulatedCurrent || a.value)}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+        `;
+        accordionContainer.appendChild(section);
+        const header = section.querySelector('.accordion-header');
+        header.addEventListener('click', () => { section.classList.toggle('active'); });
+    });
+    if (allocationChart) {
+        allocationChart.data.labels = chartLabels;
+        allocationChart.data.datasets[0].data = chartData;
+        allocationChart.data.datasets[0].backgroundColor = chartColors;
+        allocationChart.update();
+    }
+};
+
+window.calculateUnitStrategicMetrics = (unit) => {
+    let grossIncome = 0;
+    if (unit.status === 'alugado') grossIncome = unit.rentValue || 0;
+    else if (unit.status === 'vendido') {
+        const financed = (unit.saleValue || 0) - (unit.downPayment || 0);
+        if (unit.installmentCount > 0 && unit.paidInstallments < unit.installmentCount) grossIncome = financed / unit.installmentCount;
+    }
+    const iptu = unit.iptuMonthly || (unit.iptuValue ? unit.iptuValue / 12 : 0);
+    const condo = unit.condoMonthly || (unit.condoValue || 0);
+    const adm = unit.admFeeFixed || (unit.rentValue && unit.admFeePercent ? unit.rentValue * (unit.admFeePercent / 100) : 0);
+    const totalCost = iptu + condo + adm + (unit.insuranceMonthly || 0) + (unit.maintenanceAvgMonthly || 0);
+    const netIncomeMonthly = grossIncome - totalCost;
+    const netIncomeAnnual = netIncomeMonthly * 12;
+    const yieldAnual = (unit.marketValue && unit.marketValue > 0) ? (netIncomeAnnual / unit.marketValue) * 100 : 0;
+    const upsideScore = (unit.upsidePotential || 3) * 20;
+    const docScore = (unit.docQuality || 5) * 20;
+    const liqScore = (unit.liquidityLevel || 3) * 20;
+    const legalRiskScore = (6 - (unit.riskLegal || 1)) * 20;
+    const painScore = (6 - (unit.opPain || 1)) * 20;
+    const score = (upsideScore * 0.25) + (docScore * 0.20) + (liqScore * 0.20) + (legalRiskScore * 0.20) + (painScore * 0.15);
+    let classLabel = 'D';
+    if (score >= 85) classLabel = 'A'; else if (score >= 70) classLabel = 'B'; else if (score >= 50) classLabel = 'C';
+    unit.metrics = { grossIncomeMonthly: grossIncome, totalCostMonthly: totalCost, netIncomeMonthly: netIncomeMonthly, netIncomeAnnual: netIncomeAnnual, yieldAnnual: yieldAnual, score: score, class: classLabel };
+};
+
+window.updateRealEstateUI = () => {
+    const grid = document.getElementById('re-buildings-grid');
+    if (!grid) return;
+    const visibleBuildings = real_estate.filter(b => b.id !== 'conta_azul_geral');
+    if (visibleBuildings.length === 0) {
+        grid.innerHTML = '<div class="empty-state" style="grid-column: 1 / -1; padding: 60px 20px;"><i class="fa-solid fa-city" style="font-size: 48px; color: var(--text-secondary); opacity: 0.3; margin-bottom: 16px; display: block;"></i>Nenhum imóvel cadastrado. Clique em "Novo Imóvel" para começar.</div>';
+    } else {
+        grid.innerHTML = visibleBuildings.map(b => renderBuildingCard(b)).join('');
+    }
+    if (typeof updateRealEstateSummary === 'function') updateRealEstateSummary();
+    if (typeof renderRentalIncomeChart === 'function') renderRentalIncomeChart();
+    if (typeof renderSalesGrowthChart === 'function') renderSalesGrowthChart();
+    if (typeof updateUpcomingInstallmentsUI === 'function') updateUpcomingInstallmentsUI();
+    if (typeof updateContractAlertsUI === 'function') updateContractAlertsUI();
+    updateStrategicDashboard();
+};
+
+let stratTypeChart = null;
+let stratRegionChart = null;
+
+window.updateStrategicDashboard = () => {
+    const tab = document.getElementById('gestao-patrimonial');
+    if (!tab || !tab.classList.contains('active')) return;
+    let allUnits = [];
+    real_estate.forEach(b => {
+        b.units.forEach(u => {
+            u._buildingName = b.name;
+            u._buildingAddress = b.address;
+            if (!u.metrics) calculateUnitStrategicMetrics(u);
+            allUnits.push(u);
+        });
+    });
+    const bFilter = document.getElementById('filter-strat-building');
+    const buildingFilter = bFilter ? bFilter.value : 'all';
+    const cFilter = document.getElementById('filter-strat-class');
+    const classFilter = cFilter ? cFilter.value : 'all';
+    const sFilter = document.getElementById('filter-strat-strategy');
+    const strategyFilter = sFilter ? sFilter.value : 'all';
+    const rFilter = document.getElementById('filter-strat-risk');
+    const riskFilter = rFilter ? rFilter.value : 'all';
+    let filtered = allUnits.filter(u => {
+        if (buildingFilter !== 'all' && u._buildingName !== buildingFilter) return false;
+        if (classFilter !== 'all' && u.metrics.class !== classFilter) return false;
+        if (strategyFilter !== 'all' && u.strategy !== strategyFilter) return false;
+        if (riskFilter !== 'all') {
+            const risk = u.riskLegal || 1;
+            if (riskFilter === 'low' && risk > 2) return false;
+            if (riskFilter === 'medium' && risk !== 3) return false;
+            if (riskFilter === 'high' && risk < 4) return false;
+        }
+        return true;
+    });
+    const totalEquity = filtered.reduce((sum, u) => sum + (u.marketValue || 0), 0);
+    const totalNetRevenue = filtered.reduce((sum, u) => sum + (u.metrics.netIncomeMonthly || 0), 0);
+    const avgYield = totalEquity > 0 ? (filtered.reduce((sum, u) => sum + (u.metrics.netIncomeAnnual || 0), 0) / totalEquity) * 100 : 0;
+    const eqEl = document.getElementById('strat-total-equity'); if (eqEl) eqEl.textContent = formatCurrency(totalEquity);
+    const netEl = document.getElementById('strat-net-revenue'); if (netEl) netEl.textContent = formatCurrency(totalNetRevenue);
+    const yieldEl = document.getElementById('strat-avg-yield'); if (yieldEl) yieldEl.textContent = avgYield.toFixed(2) + '%';
+    renderStrategicCharts(filtered);
+    renderStrategicTables(filtered);
+    if (bFilter && bFilter.options.length === 0) {
+        bFilter.innerHTML = '<option value="all">Todos os Prédios</option>';
+        real_estate.forEach(b => {
+            const opt = document.createElement('option');
+            opt.value = b.name;
+            opt.textContent = b.name;
+            bFilter.appendChild(opt);
+        });
+    }
+};
+
+function renderStrategicCharts(units) {
+    const typeCtx = document.getElementById('chart-strat-type');
+    if (typeCtx) {
+        const types = {};
+        units.forEach(u => { const t = u.assetType || 'Não Definido'; types[t] = (types[t] || 0) + (u.marketValue || 0); });
+        const data = { labels: Object.keys(types), datasets: [{ data: Object.values(types), backgroundColor: ['#2962FF', '#00C853', '#FFA000', '#FF3D57', '#9C27B0', '#78909C'], borderWidth: 0 }] };
+        if (stratTypeChart) stratTypeChart.destroy();
+        stratTypeChart = new Chart(typeCtx, { type: 'doughnut', data: data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#9BA1A6', boxWidth: 12 } } } } });
+    }
+    const regionCtx = document.getElementById('chart-strat-region');
+    if (regionCtx) {
+        const regions = {};
+        units.forEach(u => {
+            let r = 'Outros';
+            if (u._buildingAddress) {
+                if (u._buildingAddress.toLowerCase().includes('campinas')) r = 'Campinas';
+                else if (u._buildingAddress.toLowerCase().includes('santos')) r = 'Santos';
+                else if (u._buildingAddress.toLowerCase().includes('são paulo') || u._buildingAddress.toLowerCase().includes('sp')) r = 'São Paulo';
+                else if (u._buildingAddress.toLowerCase().includes('ubatuba')) r = 'Litoral';
+            }
+            regions[r] = (regions[r] || 0) + (u.marketValue || 0);
+        });
+        const data = { labels: Object.keys(regions), datasets: [{ data: Object.values(regions), backgroundColor: ['#00E676', '#00B0FF', '#FFD600', '#FF1744', '#D500F9'], borderWidth: 0 }] };
+        if (stratRegionChart) stratRegionChart.destroy();
+        stratRegionChart = new Chart(regionCtx, { type: 'pie', data: data, options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom', labels: { color: '#9BA1A6', boxWidth: 12 } } } } });
+    }
+}
+
+function renderStrategicTables(units) {
+    const ty = document.getElementById('table-strat-top-yield'); if (ty) ty.innerHTML = [...units].sort((a,b)=>(b.metrics.yieldAnnual||0)-(a.metrics.yieldAnnual||0)).slice(0,10).map(u=>`<tr><td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td><td style="color:var(--accent-green); font-weight:600;">${(u.metrics.yieldAnnual||0).toFixed(2)}%</td><td><span class="class-badge class-${u.metrics.class}">${u.metrics.class}</span></td></tr>`).join('');
+    const tv = document.getElementById('table-strat-top-value'); if (tv) tv.innerHTML = [...units].sort((a,b)=>(b.marketValue||0)-(a.marketValue||0)).slice(0,10).map(u=>`<tr><td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td><td style="font-weight:600;">${formatCurrency(u.marketValue||0)}</td><td><div class="score-bar-mini"><div class="score-fill" style="width:${u.metrics.score}%; background:${u.metrics.score > 70 ? '#00C853' : (u.metrics.score > 40 ? '#FFA000' : '#FF3D57')}"></div></div></td></tr>`).join('');
+    const hr = document.getElementById('table-strat-high-risk'); if (hr) hr.innerHTML = [...units].sort((a,b)=>((b.riskLegal||1)+(b.riskTenant||1))-((a.riskLegal||1)+(a.riskTenant||1))).slice(0,10).map(u=>`<tr><td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td><td><span style="color:${(u.riskLegal||1)>=4?'var(--accent-red)':'inherit'}">${u.riskLegal||1}/5</span></td><td><span style="color:${(u.riskTenant||1)>=4?'var(--accent-red)':'inherit'}">${u.riskTenant||1}/5</span></td></tr>`).join('');
+    const re = document.getElementById('table-strat-recommendation'); if (re) re.innerHTML = [...units].sort((a,b)=>(a.liquidityLevel||3)-(b.liquidityLevel||3)).slice(0,10).map(u=>`<tr><td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td><td><span class="strat-badge strat-${u.strategy||'manter'}">${(u.strategy||'manter').toUpperCase()}</span></td><td><div style="display:flex; gap:2px;">${Array(5).fill(0).map((_,i)=>`<div style="width:8px; height:4px; border-radius:1px; background:${i<(u.liquidityLevel||3)?'var(--accent-blue)':'rgba(255,255,255,0.1)'}"></div>`).join('')}</div></td></tr>`).join('');
+    const ft = document.getElementById('table-strat-full'); if (ft) ft.innerHTML = units.map(u=>`<tr><td><span class="class-badge class-${u.metrics.class}">${u.metrics.class}</span></td><td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td><td style="font-size:12px;">${u.assetType||'—'}</td><td style="font-weight:500;">${formatCurrency(u.marketValue||0)}</td><td style="color:var(--accent-green);">${formatCurrency(u.metrics.netIncomeMonthly||0)}</td><td style="font-weight:600;">${(u.metrics.yieldAnnual||0).toFixed(2)}%</td><td><div class="score-bar-mini" title="${u.metrics.score}/100"><div class="score-fill" style="width:${u.metrics.score}%; background:${u.metrics.score > 70 ? '#00C853' : (u.metrics.score > 40 ? '#FFA000' : '#FF3D57')}"></div></div></td><td><span class="strat-badge strat-${u.strategy||'manter'}">${(u.strategy||'manter').toUpperCase()}</span></td></tr>`).join('');
 }
 
 // ─── Live Reload: detecta mudanças nos arquivos de código ────────────────────
@@ -1045,109 +1312,6 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     };
 
-    // ─── Update Total Equity ─────────────────────────────────────────────
-    window.updateTotalEquity = () => {
-        const totalFinanceiro = assets.reduce((sum, a) => sum + (a.simulatedCurrent || a.value), 0);
-        document.getElementById('total-equity').innerHTML = formatCurrency(totalFinanceiro);
-    };
-
-    // ─── UI Updates ──────────────────────────────────────────────────────
-    window.updateAssetListUI = () => {
-        if (assets.length === 0) {
-            assetList.innerHTML = '<li class="empty-state">Nenhum ativo cadastrado.</li>';
-            return;
-        }
-
-        assetList.innerHTML = '';
-        const sortedAssets = [...assets].reverse();
-
-        sortedAssets.forEach(asset => {
-            const li = document.createElement('li');
-            li.className = 'asset-item';
-            li.innerHTML = `
-                <div>
-                    <div class="asset-name">${asset.ticker || asset.name}</div>
-                    <span class="asset-date">${asset.quantity ? asset.quantity + ' cotas' : ''} · ${formatDate(asset.lastDate)}</span>
-                </div>
-                <div class="asset-val">${formatCurrency(asset.simulatedCurrent || asset.value)}</div>
-            `;
-            assetList.appendChild(li);
-        });
-    };
-
-    window.updateDetailedPortfolioUI = () => {
-        const tbody = document.getElementById('detailed-asset-list');
-        if (!tbody) return;
-
-        if (assets.length === 0) {
-            tbody.innerHTML = `<tr><td colspan="7" class="empty-state" style="text-align: center; color: var(--text-secondary); padding: 20px;">Nenhum ativo adicionado ainda.</td></tr>`;
-            return;
-        }
-
-        tbody.innerHTML = ''; 
-        const sortedAssets = [...assets].sort((a, b) => (b.simulatedCurrent || b.value) - (a.simulatedCurrent || a.value));
-
-        sortedAssets.forEach(asset => {
-            const tr = document.createElement('tr');
-            
-            const invested = asset.value || (asset.quantity * asset.avgPrice);
-            const current = asset.simulatedCurrent || invested;
-            const profitValue = current - invested;
-            const profitPercentage = invested > 0 ? (profitValue / invested) * 100 : 0;
-            
-            let pillClass = 'neutral';
-            let formattedProfit = '0.00%';
-            
-            if (profitPercentage > 0.01) {
-                pillClass = 'positive';
-                formattedProfit = '+' + profitPercentage.toFixed(2) + '%';
-            } else if (profitPercentage < -0.01) {
-                pillClass = 'negative';
-                formattedProfit = profitPercentage.toFixed(2) + '%';
-            }
-            
-            const currentPriceDisplay = asset.currentPrice ? formatCurrency(asset.currentPrice) : '<span class="price-loading"></span>';
-            
-            tr.innerHTML = `
-                <td style="font-weight: 600; color: #fff;">
-                    <div>${asset.ticker || asset.name}</div>
-                    <div style="font-size: 11px; color: var(--text-secondary); font-weight: 400; margin-top: 2px;">${asset.name !== asset.ticker ? asset.name : ''}</div>
-                </td>
-                <td style="color: var(--text-secondary);">${asset.quantity ? asset.quantity.toLocaleString('pt-BR') : '—'}</td>
-                <td>${formatCurrency(asset.avgPrice || 0)}</td>
-                <td>${formatCurrency(invested)}</td>
-                <td>${currentPriceDisplay}</td>
-                <td><span class="profit-pill ${pillClass}">${formattedProfit}</span></td>
-                <td style="font-weight: 600; color: ${pillClass === 'positive' ? 'var(--accent-green)' : (pillClass === 'negative' ? '#FF3D57' : '#fff')}">${formatCurrency(current)}</td>
-            `;
-            tbody.appendChild(tr);
-        });
-    };
-
-    window.updateMeusAtivosUI = () => {
-        const accordionContainer = document.getElementById('accordion-container');
-        if (!accordionContainer) return;
-
-        const categories = {};
-        assets.forEach(asset => {
-            const cat = asset.category || 'Outros';
-            if (!categories[cat]) categories[cat] = [];
-            categories[cat].push(asset);
-        });
-
-        if (assets.length === 0) {
-            accordionContainer.innerHTML = '<div class="empty-state" style="padding: 20px; text-align: center; color: var(--text-secondary);">Nenhum ativo configurado.</div>';
-            if (allocationChart) {
-                allocationChart.data.labels = [];
-                allocationChart.data.datasets[0].data = [];
-                allocationChart.update();
-            }
-            return;
-        }
-
-        accordionContainer.innerHTML = '';
-        
-        const categoryColors = {
             'Renda Fixa': '#00C853',
             'Renda Variável': '#2962FF',
             'Fundos Imobiliários': '#FF3D57',
@@ -2452,370 +2616,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     }
 
     // ─── Strategic Calculations ──────────────────────────────────────────────
-    window.calculateUnitStrategicMetrics = (unit) => {
-        // Receita Bruta
-        let grossIncome = 0;
-        if (unit.status === 'alugado') {
-            grossIncome = unit.rentValue || 0;
-        } else if (unit.status === 'vendido') {
-            const financed = (unit.saleValue || 0) - (unit.downPayment || 0);
-            if (unit.installmentCount > 0 && unit.paidInstallments < unit.installmentCount) {
-                grossIncome = financed / unit.installmentCount;
-            }
-        }
-
-        // Custos
-        const iptu = unit.iptuMonthly || (unit.iptuValue ? unit.iptuValue / 12 : 0);
-        const condo = unit.condoMonthly || (unit.condoValue || 0);
-        const adm = unit.admFeeFixed || (unit.rentValue && unit.admFeePercent ? unit.rentValue * (unit.admFeePercent / 100) : 0);
-        const insurance = unit.insuranceMonthly || 0;
-        const maintenance = unit.maintenanceAvgMonthly || 0;
-
-        const totalCost = iptu + condo + adm + insurance + maintenance;
-        const netIncomeMonthly = grossIncome - totalCost;
-        const netIncomeAnnual = netIncomeMonthly * 12;
-
-        const yieldAnual = (unit.marketValue && unit.marketValue > 0) ? (netIncomeAnnual / unit.marketValue) * 100 : 0;
-
-        // Score Patrimonial (0-100)
-        // Pesos sugeridos: Upside (25%), Doc Quality (20%), Liquidity (20%), Legal Risk (20% invertido), Op Pain (15% invertido)
-        // Inputs assumidos: 1-5 para qualitativos
-        const upsideScore = (unit.upsidePotential || 3) * 20; // 1->20, 5->100
-        const docScore = (unit.docQuality || 5) * 20;
-        const liqScore = (unit.liquidityLevel || 3) * 20;
-        const legalRiskScore = (6 - (unit.riskLegal || 1)) * 20;
-        const painScore = (6 - (unit.opPain || 1)) * 20;
-
-        const score = (upsideScore * 0.25) + (docScore * 0.20) + (liqScore * 0.20) + (legalRiskScore * 0.20) + (painScore * 0.15);
-
-        // Classificação
-        let classLabel = 'D';
-        if (score >= 85) classLabel = 'A';
-        else if (score >= 70) classLabel = 'B';
-        else if (score >= 50) classLabel = 'C';
-
-        // Update unit object
-        unit.metrics = {
-            grossIncomeMonthly: grossIncome,
-            totalCostMonthly: totalCost,
-            netIncomeMonthly: netIncomeMonthly,
-            netIncomeAnnual: netIncomeAnnual,
-            yieldAnnual: yieldAnual,
-            score: score,
-            class: classLabel
-        };
-    };
-
-    window.updateRealEstateUI = () => {
-        const grid = document.getElementById('re-buildings-grid');
-        if (!grid) return;
-
-        const visibleBuildings = real_estate.filter(b => b.id !== 'conta_azul_geral');
-
-        if (visibleBuildings.length === 0) {
-            grid.innerHTML = `
-                <div class="empty-state" style="grid-column: 1 / -1; padding: 60px 20px;">
-                    <i class="fa-solid fa-city" style="font-size: 48px; color: var(--text-secondary); opacity: 0.3; margin-bottom: 16px; display: block;"></i>
-                    Nenhum imóvel cadastrado. Clique em "Novo Imóvel" para começar.
-                </div>
-            `;
-        } else {
-            grid.innerHTML = visibleBuildings.map(b => renderBuildingCard(b)).join('');
-        }
-
-        updateRealEstateSummary();
-        renderRentalIncomeChart();
-        renderSalesGrowthChart();
-        updateUpcomingInstallmentsUI();
-        updateContractAlertsUI();
-        updateStrategicDashboard();
-    };
-
-    // ─── Strategic Dashboard Logic ───────────────────────────────────────────
-    let stratTypeChart = null;
-    let stratRegionChart = null;
-
-    window.updateStrategicDashboard = () => {
-        const tab = document.getElementById('gestao-patrimonial');
-        if (!tab || !tab.classList.contains('active')) return;
-
-        let allUnits = [];
-        real_estate.forEach(b => {
-            b.units.forEach(u => {
-                u._buildingName = b.name;
-                u._buildingAddress = b.address;
-                // Ensure metrics are calculated
-                if (!u.metrics) calculateUnitStrategicMetrics(u);
-                allUnits.push(u);
-            });
-        });
-
-        // Apply Filters
-        const buildingFilter = document.getElementById('filter-strat-building').value;
-        const classFilter = document.getElementById('filter-strat-class').value;
-        const strategyFilter = document.getElementById('filter-strat-strategy').value;
-        const riskFilter = document.getElementById('filter-strat-risk').value;
-
-        let filtered = allUnits.filter(u => {
-            if (buildingFilter !== 'all' && u._buildingName !== buildingFilter) return false;
-            if (classFilter !== 'all' && u.metrics.class !== classFilter) return false;
-            if (strategyFilter !== 'all' && u.strategy !== strategyFilter) return false;
-            if (riskFilter !== 'all') {
-                const risk = u.riskLegal || 1;
-                if (riskFilter === 'low' && risk > 2) return false;
-                if (riskFilter === 'medium' && risk !== 3) return false;
-                if (riskFilter === 'high' && risk < 4) return false;
-            }
-            return true;
-        });
-
-        // Update KPIs
-        const totalEquity = filtered.reduce((sum, u) => sum + (u.marketValue || 0), 0);
-        const totalNetRevenue = filtered.reduce((sum, u) => sum + (u.metrics.netIncomeMonthly || 0), 0);
-        const avgYield = totalEquity > 0 ? (filtered.reduce((sum, u) => sum + (u.metrics.netIncomeAnnual || 0), 0) / totalEquity) * 100 : 0;
-
-        document.getElementById('strat-total-equity').textContent = formatCurrency(totalEquity);
-        document.getElementById('strat-net-revenue').textContent = formatCurrency(totalNetRevenue);
-        document.getElementById('strat-avg-yield').textContent = avgYield.toFixed(2) + '%';
-
-        // Render Concentration Charts
-        renderStrategicCharts(filtered);
-
-        // Render Tables
-        renderStrategicTables(filtered);
-
-        // Populate Building Filter if empty
-        const bSelect = document.getElementById('filter-strat-building');
-        if (bSelect && bSelect.options.length === 0) {
-            bSelect.innerHTML = '<option value="all">Todos os Prédios</option>';
-            real_estate.forEach(b => {
-                const opt = document.createElement('option');
-                opt.value = b.name;
-                opt.textContent = b.name;
-                bSelect.appendChild(opt);
-            });
-        }
-    };
-
-    function renderStrategicCharts(units) {
-        // By Type
-        const typeCtx = document.getElementById('chart-strat-type');
-        if (typeCtx) {
-            const types = {};
-            units.forEach(u => {
-                const t = u.assetType || 'Não Definido';
-                types[t] = (types[t] || 0) + (u.marketValue || 0);
-            });
-
-            const data = {
-                labels: Object.keys(types),
-                datasets: [{
-                    data: Object.values(types),
-                    backgroundColor: ['#2962FF', '#00C853', '#FFA000', '#FF3D57', '#9C27B0', '#78909C'],
-                    borderWidth: 0
-                }]
-            };
-
-            if (stratTypeChart) stratTypeChart.destroy();
-            stratTypeChart = new Chart(typeCtx, {
-                type: 'doughnut',
-                data: data,
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#9BA1A6', boxWidth: 12 } } }
-                }
-            });
-        }
-
-        // By Region (extracted from address)
-        const regionCtx = document.getElementById('chart-strat-region');
-        if (regionCtx) {
-            const regions = {};
-            units.forEach(u => {
-                let r = 'Outros';
-                if (u._buildingAddress) {
-                    if (u._buildingAddress.toLowerCase().includes('campinas')) r = 'Campinas';
-                    else if (u._buildingAddress.toLowerCase().includes('santos')) r = 'Santos';
-                    else if (u._buildingAddress.toLowerCase().includes('são paulo') || u._buildingAddress.toLowerCase().includes('sp')) r = 'São Paulo';
-                    else if (u._buildingAddress.toLowerCase().includes('ubatuba')) r = 'Litoral';
-                }
-                regions[r] = (regions[r] || 0) + (u.marketValue || 0);
-            });
-
-            const data = {
-                labels: Object.keys(regions),
-                datasets: [{
-                    data: Object.values(regions),
-                    backgroundColor: ['#00E676', '#00B0FF', '#FFD600', '#FF1744', '#D500F9'],
-                    borderWidth: 0
-                }]
-            };
-
-            if (stratRegionChart) stratRegionChart.destroy();
-            stratRegionChart = new Chart(regionCtx, {
-                type: 'pie',
-                data: data,
-                options: { 
-                    responsive: true, 
-                    maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom', labels: { color: '#9BA1A6', boxWidth: 12 } } }
-                }
-            });
-        }
-    }
-
-    function renderStrategicTables(units) {
-        // Top Yield
-        const topYieldBody = document.getElementById('table-strat-top-yield');
-        const topYield = [...units].sort((a, b) => (b.metrics.yieldAnnual || 0) - (a.metrics.yieldAnnual || 0)).slice(0, 10);
-        topYieldBody.innerHTML = topYield.map(u => `
-            <tr>
-                <td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td>
-                <td style="color:var(--accent-green); font-weight:600;">${(u.metrics.yieldAnnual || 0).toFixed(2)}%</td>
-                <td><span class="class-badge class-${u.metrics.class}">${u.metrics.class}</span></td>
-            </tr>
-        `).join('');
-
-        // Top Valor
-        const topValueBody = document.getElementById('table-strat-top-value');
-        const topValue = [...units].sort((a, b) => (b.marketValue || 0) - (a.marketValue || 0)).slice(0, 10);
-        topValueBody.innerHTML = topValue.map(u => `
-            <tr>
-                <td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td>
-                <td style="font-weight:600;">${formatCurrency(u.marketValue || 0)}</td>
-                <td><div class="score-bar-mini"><div class="score-fill" style="width:${u.metrics.score}%; background:${u.metrics.score > 70 ? '#00C853' : (u.metrics.score > 40 ? '#FFA000' : '#FF3D57')}"></div></div></td>
-            </tr>
-        `).join('');
-
-        // High Risk
-        const highRiskBody = document.getElementById('table-strat-high-risk');
-        const highRisk = [...units].sort((a, b) => {
-            const riskA = (a.riskLegal || 1) + (a.riskTenant || 1);
-            const riskB = (b.riskLegal || 1) + (b.riskTenant || 1);
-            return riskB - riskA;
-        }).slice(0, 10);
-        highRiskBody.innerHTML = highRisk.map(u => `
-            <tr>
-                <td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td>
-                <td><span style="color:${(u.riskLegal || 1) >= 4 ? 'var(--accent-red)' : 'inherit'}">${u.riskLegal || 1} / 5</span></td>
-                <td><span style="color:${(u.riskTenant || 1) >= 4 ? 'var(--accent-red)' : 'inherit'}">${u.riskTenant || 1} / 5</span></td>
-            </tr>
-        `).join('');
-
-        // Recommendation / Liquidity
-        const recommendationBody = document.getElementById('table-strat-recommendation');
-        const recommendations = [...units].sort((a, b) => (a.liquidityLevel || 3) - (b.liquidityLevel || 3)).slice(0, 10);
-        recommendationBody.innerHTML = recommendations.map(u => `
-            <tr>
-                <td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td>
-                <td><span class="strat-badge strat-${u.strategy || 'manter'}">${(u.strategy || 'manter').toUpperCase()}</span></td>
-                <td><div style="display:flex; gap:2px;">${Array(5).fill(0).map((_, i) => `<div style="width:8px; height:4px; border-radius:1px; background:${i < (u.liquidityLevel || 3) ? 'var(--accent-blue)' : 'rgba(255,255,255,0.1)'}"></div>`).join('')}</div></td>
-            </tr>
-        `).join('');
-
-        // Full Table
-        const fullTableBody = document.getElementById('table-strat-full');
-        fullTableBody.innerHTML = units.map(u => `
-            <tr>
-                <td><span class="class-badge class-${u.metrics.class}">${u.metrics.class}</span></td>
-                <td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td>
-                <td style="font-size:12px;">${u.assetType || '—'}</td>
-                <td style="font-weight:500;">${formatCurrency(u.marketValue || 0)}</td>
-                <td style="color:var(--accent-green);">${formatCurrency(u.metrics.netIncomeMonthly || 0)}</td>
-                <td style="font-weight:600;">${(u.metrics.yieldAnnual || 0).toFixed(2)}%</td>
-                <td><div class="score-bar-mini" title="${u.metrics.score}/100"><div class="score-fill" style="width:${u.metrics.score}%; background:${u.metrics.score > 70 ? '#00C853' : (u.metrics.score > 40 ? '#FFA000' : '#FF3D57')}"></div></div></td>
-                <td><span class="strat-badge strat-${u.strategy || 'manter'}">${(u.strategy || 'manter').toUpperCase()}</span></td>
-            </tr>
-        `).join('');
-    }
-
-    // ─── Batch Edit Strategic ────────────────────────────────────────────────
-    window.openBatchEditStrategic = () => {
-        const body = document.getElementById('batch-edit-strategic-body');
-        body.innerHTML = '';
-        
-        real_estate.forEach(b => {
-            b.units.forEach(u => {
-                const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td><div style="font-size:12px; font-weight:600;">${u.label}</div><div style="font-size:9px; color:var(--text-secondary);">${b.name}</div></td>
-                    <td><select class="batch-input strat-type" data-bid="${b.id}" data-uid="${u.id}">
-                        <option value="Residencial" ${u.assetType==='Residencial'?'selected':''}>Residencial</option>
-                        <option value="Comercial" ${u.assetType==='Comercial'?'selected':''}>Comercial</option>
-                        <option value="Logístico" ${u.assetType==='Logístico'?'selected':''}>Logístico</option>
-                        <option value="Terreno" ${u.assetType==='Terreno'?'selected':''}>Terreno</option>
-                        <option value="Outros" ${u.assetType==='Outros'?'selected':''}>Outros</option>
-                    </select></td>
-                    <td><input type="number" class="batch-input strat-market-val" value="${u.marketValue||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
-                    <td><select class="batch-input strat-strategy" data-bid="${b.id}" data-uid="${u.id}">
-                        <option value="manter" ${u.strategy==='manter'?'selected':''}>Manter</option>
-                        <option value="venda" ${u.strategy==='venda'?'selected':''}>Venda</option>
-                        <option value="reforma" ${u.strategy==='reforma'?'selected':''}>Reforma</option>
-                        <option value="desenvolvimento" ${u.strategy==='desenvolvimento'?'selected':''}>Desenv.</option>
-                    </select></td>
-                    <td><input type="number" class="batch-input strat-iptu" value="${u.iptuMonthly||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
-                    <td><input type="number" class="batch-input strat-condo" value="${u.condoMonthly||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
-                    <td><input type="number" class="batch-input strat-adm" value="${u.admFeeFixed||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
-                    <td><input type="number" class="batch-input strat-ins" value="${u.insuranceMonthly||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
-                    <td><input type="number" class="batch-input strat-maint" value="${u.maintenanceAvgMonthly||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
-                    <td><input type="number" class="batch-input strat-risk-l" value="${u.riskLegal||1}" min="1" max="5" data-bid="${b.id}" data-uid="${u.id}"></td>
-                    <td><input type="number" class="batch-input strat-risk-t" value="${u.riskTenant||1}" min="1" max="5" data-bid="${b.id}" data-uid="${u.id}"></td>
-                    <td><input type="number" class="batch-input strat-liq" value="${u.liquidityLevel||3}" min="1" max="5" data-bid="${b.id}" data-uid="${u.id}"></td>
-                    <td><input type="number" class="batch-input strat-doc" value="${u.docQuality||5}" min="1" max="5" data-bid="${b.id}" data-uid="${u.id}"></td>
-                    <td><input type="number" class="batch-input strat-up" value="${u.upsidePotential||3}" min="1" max="5" data-bid="${b.id}" data-uid="${u.id}"></td>
-                    <td><input type="number" class="batch-input strat-pain" value="${u.opPain||1}" min="1" max="5" data-bid="${b.id}" data-uid="${u.id}"></td>
-                    <td><input type="text" class="batch-input strat-notes" value="${u.stratNotes||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
-                `;
-                body.appendChild(tr);
-            });
-        });
-
-        document.getElementById('modal-batch-edit-strategic').classList.add('visible');
-    };
-
-    window.saveBatchEditStrategic = () => {
-        const rows = document.querySelectorAll('#batch-edit-strategic-body tr');
-        rows.forEach(tr => {
-            const bid = parseInt(tr.querySelector('.strat-market-val').dataset.bid);
-            const uid = parseInt(tr.querySelector('.strat-market-val').dataset.uid);
-            
-            const building = real_estate.find(b => b.id === bid);
-            if (!building) return;
-            const unit = building.units.find(u => u.id === uid);
-            if (!unit) return;
-
-            unit.assetType = tr.querySelector('.strat-type').value;
-            unit.marketValue = parseFloat(tr.querySelector('.strat-market-val').value) || 0;
-            unit.strategy = tr.querySelector('.strat-strategy').value;
-            unit.iptuMonthly = parseFloat(tr.querySelector('.strat-iptu').value) || 0;
-            unit.condoMonthly = parseFloat(tr.querySelector('.strat-condo').value) || 0;
-            unit.admFeeFixed = parseFloat(tr.querySelector('.strat-adm').value) || 0;
-            unit.insuranceMonthly = parseFloat(tr.querySelector('.strat-ins').value) || 0;
-            unit.maintenanceAvgMonthly = parseFloat(tr.querySelector('.strat-maint').value) || 0;
-            unit.riskLegal = parseInt(tr.querySelector('.strat-risk-l').value) || 1;
-            unit.riskTenant = parseInt(tr.querySelector('.strat-risk-t').value) || 1;
-            unit.liquidityLevel = parseInt(tr.querySelector('.strat-liq').value) || 3;
-            unit.docQuality = parseInt(tr.querySelector('.strat-doc').value) || 5;
-            unit.upsidePotential = parseInt(tr.querySelector('.strat-up').value) || 3;
-            unit.opPain = parseInt(tr.querySelector('.strat-pain').value) || 1;
-            unit.stratNotes = tr.querySelector('.strat-notes').value.trim();
-
-            calculateUnitStrategicMetrics(unit);
-        });
-
-        saveRealEstate();
-        document.getElementById('modal-batch-edit-strategic').classList.remove('visible');
-        updateStrategicDashboard();
-
-        // If detail panel is open, refresh it too
-        if (_currentBuildingId) {
-            const building = real_estate.find(b => b.id === _currentBuildingId);
-            if (building) {
-                renderBuildingDetail();
-            }
-        }
-    };
 
     const reNetYieldToggle = document.getElementById('re-net-yield-toggle');
     if (reNetYieldToggle) {
