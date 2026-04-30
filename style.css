@@ -2086,3 +2086,77 @@ body {
         font-size: 16px;
     }
 }
+
+/* --- Strategic Management Styles --- */
+.class-badge {
+    padding: 4px 10px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 700;
+    text-align: center;
+    display: inline-block;
+    min-width: 32px;
+}
+.class-A { background-color: rgba(0, 200, 83, 0.2); color: #00E676; border: 1px solid rgba(0, 200, 83, 0.3); }
+.class-B { background-color: rgba(41, 98, 255, 0.2); color: #448AFF; border: 1px solid rgba(41, 98, 255, 0.3); }
+.class-C { background-color: rgba(255, 160, 0, 0.2); color: #FFD54F; border: 1px solid rgba(255, 160, 0, 0.3); }
+.class-D { background-color: rgba(255, 61, 87, 0.2); color: #FF5252; border: 1px solid rgba(255, 61, 87, 0.3); }
+
+.strat-badge {
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 600;
+    text-transform: uppercase;
+}
+.strat-manter { background: rgba(255,255,255,0.05); color: var(--text-secondary); }
+.strat-venda { background: rgba(255, 61, 87, 0.1); color: var(--accent-red); }
+.strat-reforma { background: rgba(41, 98, 255, 0.1); color: var(--accent-blue); }
+.strat-desenvolvimento { background: rgba(0, 200, 83, 0.1); color: var(--accent-green); }
+
+.score-bar-mini {
+    width: 60px;
+    height: 6px;
+    background: rgba(255,255,255,0.05);
+    border-radius: 3px;
+    overflow: hidden;
+}
+.score-fill {
+    height: 100%;
+    border-radius: 3px;
+    transition: width 0.6s ease;
+}
+
+.batch-input {
+    width: 100%;
+    background: rgba(0,0,0,0.3);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    color: #fff;
+    padding: 6px 8px;
+    font-size: 12px;
+}
+.batch-input:focus {
+    border-color: var(--accent-blue);
+    outline: none;
+}
+
+.strategic-details summary::-webkit-details-marker {
+    display: none;
+}
+
+.btn-action-small {
+    padding: 4px 8px;
+    background: rgba(255,255,255,0.05);
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 4px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+.btn-action-small:hover {
+    background: var(--bg-tertiary);
+    color: #fff;
+}
+

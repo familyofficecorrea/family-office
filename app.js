@@ -361,7 +361,12 @@ document.addEventListener('DOMContentLoaded', async () => {
             tabContents.forEach(tc => tc.classList.remove('active'));
             item.classList.add('active');
             const targetTab = document.getElementById(target);
-            if (targetTab) targetTab.classList.add('active');
+            if (targetTab) {
+                targetTab.classList.add('active');
+                if (target === 'gestao-patrimonial' && typeof window.updateStrategicDashboard === 'function') {
+                    window.updateStrategicDashboard();
+                }
+            }
         });
     });
 
@@ -1411,6 +1416,31 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit-unit-installment-start').value = unit.installmentStartDate || '';
         document.getElementById('edit-unit-paid-installments').value = unit.paidInstallments || '';
         document.getElementById('edit-unit-notes').value = unit.notes || '';
+        
+        // Strategic Fields
+        document.getElementById('edit-unit-type').value = unit.assetType || '';
+        document.getElementById('edit-unit-market-value').value = unit.marketValue || '';
+        document.getElementById('edit-unit-eval-date').value = unit.evalDate || '';
+        document.getElementById('edit-unit-eval-source').value = unit.evalSource || '';
+        document.getElementById('edit-unit-patrimonial-status').value = unit.patrimonialStatus || 'operacional';
+        document.getElementById('edit-unit-strategy').value = unit.strategy || 'manter';
+        document.getElementById('edit-unit-iptu-monthly').value = unit.iptuMonthly || '';
+        document.getElementById('edit-unit-condo-monthly').value = unit.condoMonthly || '';
+        document.getElementById('edit-unit-adm-fee-fixed').value = unit.admFeeFixed || '';
+        document.getElementById('edit-unit-insurance-monthly').value = unit.insuranceMonthly || '';
+        document.getElementById('edit-unit-maintenance-monthly').value = unit.maintenanceAvgMonthly || '';
+        document.getElementById('edit-unit-capex-planned').value = unit.capexPlanned || '';
+        document.getElementById('edit-unit-risk-legal').value = unit.riskLegal || '1';
+        document.getElementById('edit-unit-risk-tenant').value = unit.riskTenant || '1';
+        document.getElementById('edit-unit-guarantee').value = unit.guaranteeType || '';
+        document.getElementById('edit-unit-liquidity').value = unit.liquidityLevel || '3';
+        document.getElementById('edit-unit-vacancy-12m').value = unit.vacancy12m || '0';
+        document.getElementById('edit-unit-default-12m').value = unit.default12m || '0';
+        document.getElementById('edit-unit-doc-quality').value = unit.docQuality || '5';
+        document.getElementById('edit-unit-upside-potential').value = unit.upsidePotential || '3';
+        document.getElementById('edit-unit-op-pain').value = unit.opPain || '1';
+        document.getElementById('edit-unit-strat-notes').value = unit.stratNotes || '';
+
         document.getElementById('edit-unit-title').textContent = `Editar ${unit.label}`;
 
         // Toggle groups
@@ -2421,6 +2451,61 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
     }
 
+    // ─── Strategic Calculations ──────────────────────────────────────────────
+    window.calculateUnitStrategicMetrics = (unit) => {
+        // Receita Bruta
+        let grossIncome = 0;
+        if (unit.status === 'alugado') {
+            grossIncome = unit.rentValue || 0;
+        } else if (unit.status === 'vendido') {
+            const financed = (unit.saleValue || 0) - (unit.downPayment || 0);
+            if (unit.installmentCount > 0 && unit.paidInstallments < unit.installmentCount) {
+                grossIncome = financed / unit.installmentCount;
+            }
+        }
+
+        // Custos
+        const iptu = unit.iptuMonthly || (unit.iptuValue ? unit.iptuValue / 12 : 0);
+        const condo = unit.condoMonthly || (unit.condoValue || 0);
+        const adm = unit.admFeeFixed || (unit.rentValue && unit.admFeePercent ? unit.rentValue * (unit.admFeePercent / 100) : 0);
+        const insurance = unit.insuranceMonthly || 0;
+        const maintenance = unit.maintenanceAvgMonthly || 0;
+
+        const totalCost = iptu + condo + adm + insurance + maintenance;
+        const netIncomeMonthly = grossIncome - totalCost;
+        const netIncomeAnnual = netIncomeMonthly * 12;
+
+        const yieldAnual = (unit.marketValue && unit.marketValue > 0) ? (netIncomeAnnual / unit.marketValue) * 100 : 0;
+
+        // Score Patrimonial (0-100)
+        // Pesos sugeridos: Upside (25%), Doc Quality (20%), Liquidity (20%), Legal Risk (20% invertido), Op Pain (15% invertido)
+        // Inputs assumidos: 1-5 para qualitativos
+        const upsideScore = (unit.upsidePotential || 3) * 20; // 1->20, 5->100
+        const docScore = (unit.docQuality || 5) * 20;
+        const liqScore = (unit.liquidityLevel || 3) * 20;
+        const legalRiskScore = (6 - (unit.riskLegal || 1)) * 20;
+        const painScore = (6 - (unit.opPain || 1)) * 20;
+
+        const score = (upsideScore * 0.25) + (docScore * 0.20) + (liqScore * 0.20) + (legalRiskScore * 0.20) + (painScore * 0.15);
+
+        // Classificação
+        let classLabel = 'D';
+        if (score >= 85) classLabel = 'A';
+        else if (score >= 70) classLabel = 'B';
+        else if (score >= 50) classLabel = 'C';
+
+        // Update unit object
+        unit.metrics = {
+            grossIncomeMonthly: grossIncome,
+            totalCostMonthly: totalCost,
+            netIncomeMonthly: netIncomeMonthly,
+            netIncomeAnnual: netIncomeAnnual,
+            yieldAnnual: yieldAnual,
+            score: score,
+            class: classLabel
+        };
+    };
+
     window.updateRealEstateUI = () => {
         const grid = document.getElementById('re-buildings-grid');
         if (!grid) return;
@@ -2443,8 +2528,287 @@ document.addEventListener('DOMContentLoaded', async () => {
         renderSalesGrowthChart();
         updateUpcomingInstallmentsUI();
         updateContractAlertsUI();
+        updateStrategicDashboard();
+    };
 
-        // If detail panel is open, refresh it too
+    // ─── Strategic Dashboard Logic ───────────────────────────────────────────
+    let stratTypeChart = null;
+    let stratRegionChart = null;
+
+    window.updateStrategicDashboard = () => {
+        const tab = document.getElementById('gestao-patrimonial');
+        if (!tab || !tab.classList.contains('active')) return;
+
+        let allUnits = [];
+        real_estate.forEach(b => {
+            b.units.forEach(u => {
+                u._buildingName = b.name;
+                u._buildingAddress = b.address;
+                // Ensure metrics are calculated
+                if (!u.metrics) calculateUnitStrategicMetrics(u);
+                allUnits.push(u);
+            });
+        });
+
+        // Apply Filters
+        const buildingFilter = document.getElementById('filter-strat-building').value;
+        const classFilter = document.getElementById('filter-strat-class').value;
+        const strategyFilter = document.getElementById('filter-strat-strategy').value;
+        const riskFilter = document.getElementById('filter-strat-risk').value;
+
+        let filtered = allUnits.filter(u => {
+            if (buildingFilter !== 'all' && u._buildingName !== buildingFilter) return false;
+            if (classFilter !== 'all' && u.metrics.class !== classFilter) return false;
+            if (strategyFilter !== 'all' && u.strategy !== strategyFilter) return false;
+            if (riskFilter !== 'all') {
+                const risk = u.riskLegal || 1;
+                if (riskFilter === 'low' && risk > 2) return false;
+                if (riskFilter === 'medium' && risk !== 3) return false;
+                if (riskFilter === 'high' && risk < 4) return false;
+            }
+            return true;
+        });
+
+        // Update KPIs
+        const totalEquity = filtered.reduce((sum, u) => sum + (u.marketValue || 0), 0);
+        const totalNetRevenue = filtered.reduce((sum, u) => sum + (u.metrics.netIncomeMonthly || 0), 0);
+        const avgYield = totalEquity > 0 ? (filtered.reduce((sum, u) => sum + (u.metrics.netIncomeAnnual || 0), 0) / totalEquity) * 100 : 0;
+
+        document.getElementById('strat-total-equity').textContent = formatCurrency(totalEquity);
+        document.getElementById('strat-net-revenue').textContent = formatCurrency(totalNetRevenue);
+        document.getElementById('strat-avg-yield').textContent = avgYield.toFixed(2) + '%';
+
+        // Render Concentration Charts
+        renderStrategicCharts(filtered);
+
+        // Render Tables
+        renderStrategicTables(filtered);
+
+        // Populate Building Filter if empty
+        const bSelect = document.getElementById('filter-strat-building');
+        if (bSelect && bSelect.options.length === 0) {
+            bSelect.innerHTML = '<option value="all">Todos os Prédios</option>';
+            real_estate.forEach(b => {
+                const opt = document.createElement('option');
+                opt.value = b.name;
+                opt.textContent = b.name;
+                bSelect.appendChild(opt);
+            });
+        }
+    };
+
+    function renderStrategicCharts(units) {
+        // By Type
+        const typeCtx = document.getElementById('chart-strat-type');
+        if (typeCtx) {
+            const types = {};
+            units.forEach(u => {
+                const t = u.assetType || 'Não Definido';
+                types[t] = (types[t] || 0) + (u.marketValue || 0);
+            });
+
+            const data = {
+                labels: Object.keys(types),
+                datasets: [{
+                    data: Object.values(types),
+                    backgroundColor: ['#2962FF', '#00C853', '#FFA000', '#FF3D57', '#9C27B0', '#78909C'],
+                    borderWidth: 0
+                }]
+            };
+
+            if (stratTypeChart) stratTypeChart.destroy();
+            stratTypeChart = new Chart(typeCtx, {
+                type: 'doughnut',
+                data: data,
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#9BA1A6', boxWidth: 12 } } }
+                }
+            });
+        }
+
+        // By Region (extracted from address)
+        const regionCtx = document.getElementById('chart-strat-region');
+        if (regionCtx) {
+            const regions = {};
+            units.forEach(u => {
+                let r = 'Outros';
+                if (u._buildingAddress) {
+                    if (u._buildingAddress.toLowerCase().includes('campinas')) r = 'Campinas';
+                    else if (u._buildingAddress.toLowerCase().includes('santos')) r = 'Santos';
+                    else if (u._buildingAddress.toLowerCase().includes('são paulo') || u._buildingAddress.toLowerCase().includes('sp')) r = 'São Paulo';
+                    else if (u._buildingAddress.toLowerCase().includes('ubatuba')) r = 'Litoral';
+                }
+                regions[r] = (regions[r] || 0) + (u.marketValue || 0);
+            });
+
+            const data = {
+                labels: Object.keys(regions),
+                datasets: [{
+                    data: Object.values(regions),
+                    backgroundColor: ['#00E676', '#00B0FF', '#FFD600', '#FF1744', '#D500F9'],
+                    borderWidth: 0
+                }]
+            };
+
+            if (stratRegionChart) stratRegionChart.destroy();
+            stratRegionChart = new Chart(regionCtx, {
+                type: 'pie',
+                data: data,
+                options: { 
+                    responsive: true, 
+                    maintainAspectRatio: false,
+                    plugins: { legend: { position: 'bottom', labels: { color: '#9BA1A6', boxWidth: 12 } } }
+                }
+            });
+        }
+    }
+
+    function renderStrategicTables(units) {
+        // Top Yield
+        const topYieldBody = document.getElementById('table-strat-top-yield');
+        const topYield = [...units].sort((a, b) => (b.metrics.yieldAnnual || 0) - (a.metrics.yieldAnnual || 0)).slice(0, 10);
+        topYieldBody.innerHTML = topYield.map(u => `
+            <tr>
+                <td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td>
+                <td style="color:var(--accent-green); font-weight:600;">${(u.metrics.yieldAnnual || 0).toFixed(2)}%</td>
+                <td><span class="class-badge class-${u.metrics.class}">${u.metrics.class}</span></td>
+            </tr>
+        `).join('');
+
+        // Top Valor
+        const topValueBody = document.getElementById('table-strat-top-value');
+        const topValue = [...units].sort((a, b) => (b.marketValue || 0) - (a.marketValue || 0)).slice(0, 10);
+        topValueBody.innerHTML = topValue.map(u => `
+            <tr>
+                <td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td>
+                <td style="font-weight:600;">${formatCurrency(u.marketValue || 0)}</td>
+                <td><div class="score-bar-mini"><div class="score-fill" style="width:${u.metrics.score}%; background:${u.metrics.score > 70 ? '#00C853' : (u.metrics.score > 40 ? '#FFA000' : '#FF3D57')}"></div></div></td>
+            </tr>
+        `).join('');
+
+        // High Risk
+        const highRiskBody = document.getElementById('table-strat-high-risk');
+        const highRisk = [...units].sort((a, b) => {
+            const riskA = (a.riskLegal || 1) + (a.riskTenant || 1);
+            const riskB = (b.riskLegal || 1) + (b.riskTenant || 1);
+            return riskB - riskA;
+        }).slice(0, 10);
+        highRiskBody.innerHTML = highRisk.map(u => `
+            <tr>
+                <td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td>
+                <td><span style="color:${(u.riskLegal || 1) >= 4 ? 'var(--accent-red)' : 'inherit'}">${u.riskLegal || 1} / 5</span></td>
+                <td><span style="color:${(u.riskTenant || 1) >= 4 ? 'var(--accent-red)' : 'inherit'}">${u.riskTenant || 1} / 5</span></td>
+            </tr>
+        `).join('');
+
+        // Recommendation / Liquidity
+        const recommendationBody = document.getElementById('table-strat-recommendation');
+        const recommendations = [...units].sort((a, b) => (a.liquidityLevel || 3) - (b.liquidityLevel || 3)).slice(0, 10);
+        recommendationBody.innerHTML = recommendations.map(u => `
+            <tr>
+                <td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td>
+                <td><span class="strat-badge strat-${u.strategy || 'manter'}">${(u.strategy || 'manter').toUpperCase()}</span></td>
+                <td><div style="display:flex; gap:2px;">${Array(5).fill(0).map((_, i) => `<div style="width:8px; height:4px; border-radius:1px; background:${i < (u.liquidityLevel || 3) ? 'var(--accent-blue)' : 'rgba(255,255,255,0.1)'}"></div>`).join('')}</div></td>
+            </tr>
+        `).join('');
+
+        // Full Table
+        const fullTableBody = document.getElementById('table-strat-full');
+        fullTableBody.innerHTML = units.map(u => `
+            <tr>
+                <td><span class="class-badge class-${u.metrics.class}">${u.metrics.class}</span></td>
+                <td><div style="font-weight:600;">${u.label}</div><div style="font-size:10px; color:var(--text-secondary);">${u._buildingName}</div></td>
+                <td style="font-size:12px;">${u.assetType || '—'}</td>
+                <td style="font-weight:500;">${formatCurrency(u.marketValue || 0)}</td>
+                <td style="color:var(--accent-green);">${formatCurrency(u.metrics.netIncomeMonthly || 0)}</td>
+                <td style="font-weight:600;">${(u.metrics.yieldAnnual || 0).toFixed(2)}%</td>
+                <td><div class="score-bar-mini" title="${u.metrics.score}/100"><div class="score-fill" style="width:${u.metrics.score}%; background:${u.metrics.score > 70 ? '#00C853' : (u.metrics.score > 40 ? '#FFA000' : '#FF3D57')}"></div></div></td>
+                <td><span class="strat-badge strat-${u.strategy || 'manter'}">${(u.strategy || 'manter').toUpperCase()}</span></td>
+            </tr>
+        `).join('');
+    }
+
+    // ─── Batch Edit Strategic ────────────────────────────────────────────────
+    window.openBatchEditStrategic = () => {
+        const body = document.getElementById('batch-edit-strategic-body');
+        body.innerHTML = '';
+        
+        real_estate.forEach(b => {
+            b.units.forEach(u => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td><div style="font-size:12px; font-weight:600;">${u.label}</div><div style="font-size:9px; color:var(--text-secondary);">${b.name}</div></td>
+                    <td><select class="batch-input strat-type" data-bid="${b.id}" data-uid="${u.id}">
+                        <option value="Residencial" ${u.assetType==='Residencial'?'selected':''}>Residencial</option>
+                        <option value="Comercial" ${u.assetType==='Comercial'?'selected':''}>Comercial</option>
+                        <option value="Logístico" ${u.assetType==='Logístico'?'selected':''}>Logístico</option>
+                        <option value="Terreno" ${u.assetType==='Terreno'?'selected':''}>Terreno</option>
+                        <option value="Outros" ${u.assetType==='Outros'?'selected':''}>Outros</option>
+                    </select></td>
+                    <td><input type="number" class="batch-input strat-market-val" value="${u.marketValue||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
+                    <td><select class="batch-input strat-strategy" data-bid="${b.id}" data-uid="${u.id}">
+                        <option value="manter" ${u.strategy==='manter'?'selected':''}>Manter</option>
+                        <option value="venda" ${u.strategy==='venda'?'selected':''}>Venda</option>
+                        <option value="reforma" ${u.strategy==='reforma'?'selected':''}>Reforma</option>
+                        <option value="desenvolvimento" ${u.strategy==='desenvolvimento'?'selected':''}>Desenv.</option>
+                    </select></td>
+                    <td><input type="number" class="batch-input strat-iptu" value="${u.iptuMonthly||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
+                    <td><input type="number" class="batch-input strat-condo" value="${u.condoMonthly||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
+                    <td><input type="number" class="batch-input strat-adm" value="${u.admFeeFixed||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
+                    <td><input type="number" class="batch-input strat-ins" value="${u.insuranceMonthly||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
+                    <td><input type="number" class="batch-input strat-maint" value="${u.maintenanceAvgMonthly||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
+                    <td><input type="number" class="batch-input strat-risk-l" value="${u.riskLegal||1}" min="1" max="5" data-bid="${b.id}" data-uid="${u.id}"></td>
+                    <td><input type="number" class="batch-input strat-risk-t" value="${u.riskTenant||1}" min="1" max="5" data-bid="${b.id}" data-uid="${u.id}"></td>
+                    <td><input type="number" class="batch-input strat-liq" value="${u.liquidityLevel||3}" min="1" max="5" data-bid="${b.id}" data-uid="${u.id}"></td>
+                    <td><input type="number" class="batch-input strat-doc" value="${u.docQuality||5}" min="1" max="5" data-bid="${b.id}" data-uid="${u.id}"></td>
+                    <td><input type="number" class="batch-input strat-up" value="${u.upsidePotential||3}" min="1" max="5" data-bid="${b.id}" data-uid="${u.id}"></td>
+                    <td><input type="number" class="batch-input strat-pain" value="${u.opPain||1}" min="1" max="5" data-bid="${b.id}" data-uid="${u.id}"></td>
+                    <td><input type="text" class="batch-input strat-notes" value="${u.stratNotes||''}" data-bid="${b.id}" data-uid="${u.id}"></td>
+                `;
+                body.appendChild(tr);
+            });
+        });
+
+        document.getElementById('modal-batch-edit-strategic').classList.add('visible');
+    };
+
+    window.saveBatchEditStrategic = () => {
+        const rows = document.querySelectorAll('#batch-edit-strategic-body tr');
+        rows.forEach(tr => {
+            const bid = parseInt(tr.querySelector('.strat-market-val').dataset.bid);
+            const uid = parseInt(tr.querySelector('.strat-market-val').dataset.uid);
+            
+            const building = real_estate.find(b => b.id === bid);
+            if (!building) return;
+            const unit = building.units.find(u => u.id === uid);
+            if (!unit) return;
+
+            unit.assetType = tr.querySelector('.strat-type').value;
+            unit.marketValue = parseFloat(tr.querySelector('.strat-market-val').value) || 0;
+            unit.strategy = tr.querySelector('.strat-strategy').value;
+            unit.iptuMonthly = parseFloat(tr.querySelector('.strat-iptu').value) || 0;
+            unit.condoMonthly = parseFloat(tr.querySelector('.strat-condo').value) || 0;
+            unit.admFeeFixed = parseFloat(tr.querySelector('.strat-adm').value) || 0;
+            unit.insuranceMonthly = parseFloat(tr.querySelector('.strat-ins').value) || 0;
+            unit.maintenanceAvgMonthly = parseFloat(tr.querySelector('.strat-maint').value) || 0;
+            unit.riskLegal = parseInt(tr.querySelector('.strat-risk-l').value) || 1;
+            unit.riskTenant = parseInt(tr.querySelector('.strat-risk-t').value) || 1;
+            unit.liquidityLevel = parseInt(tr.querySelector('.strat-liq').value) || 3;
+            unit.docQuality = parseInt(tr.querySelector('.strat-doc').value) || 5;
+            unit.upsidePotential = parseInt(tr.querySelector('.strat-up').value) || 3;
+            unit.opPain = parseInt(tr.querySelector('.strat-pain').value) || 1;
+            unit.stratNotes = tr.querySelector('.strat-notes').value.trim();
+
+            calculateUnitStrategicMetrics(unit);
+        });
+
+        saveRealEstate();
+        document.getElementById('modal-batch-edit-strategic').classList.remove('visible');
+        updateStrategicDashboard();
+    };
+     // If detail panel is open, refresh it too
         if (_currentBuildingId) {
             const building = real_estate.find(b => b.id === _currentBuildingId);
             if (building) {
@@ -2600,6 +2964,33 @@ document.addEventListener('DOMContentLoaded', async () => {
             unit.installmentStartDate = document.getElementById('edit-unit-installment-start').value || '';
             unit.paidInstallments = parseInt(document.getElementById('edit-unit-paid-installments').value) || 0;
             unit.notes = document.getElementById('edit-unit-notes').value.trim();
+
+            // Strategic Fields
+            unit.assetType = document.getElementById('edit-unit-type').value;
+            unit.marketValue = parseFloat(document.getElementById('edit-unit-market-value').value) || 0;
+            unit.evalDate = document.getElementById('edit-unit-eval-date').value || '';
+            unit.evalSource = document.getElementById('edit-unit-eval-source').value || '';
+            unit.patrimonialStatus = document.getElementById('edit-unit-patrimonial-status').value;
+            unit.strategy = document.getElementById('edit-unit-strategy').value;
+            unit.iptuMonthly = parseFloat(document.getElementById('edit-unit-iptu-monthly').value) || 0;
+            unit.condoMonthly = parseFloat(document.getElementById('edit-unit-condo-monthly').value) || 0;
+            unit.admFeeFixed = parseFloat(document.getElementById('edit-unit-adm-fee-fixed').value) || 0;
+            unit.insuranceMonthly = parseFloat(document.getElementById('edit-unit-insurance-monthly').value) || 0;
+            unit.maintenanceAvgMonthly = parseFloat(document.getElementById('edit-unit-maintenance-monthly').value) || 0;
+            unit.capexPlanned = parseFloat(document.getElementById('edit-unit-capex-planned').value) || 0;
+            unit.riskLegal = parseInt(document.getElementById('edit-unit-risk-legal').value) || 1;
+            unit.riskTenant = parseInt(document.getElementById('edit-unit-risk-tenant').value) || 1;
+            unit.guaranteeType = document.getElementById('edit-unit-guarantee').value;
+            unit.liquidityLevel = parseInt(document.getElementById('edit-unit-liquidity').value) || 3;
+            unit.vacancy12m = parseInt(document.getElementById('edit-unit-vacancy-12m').value) || 0;
+            unit.default12m = parseInt(document.getElementById('edit-unit-default-12m').value) || 0;
+            unit.docQuality = parseInt(document.getElementById('edit-unit-doc-quality').value) || 5;
+            unit.upsidePotential = parseInt(document.getElementById('edit-unit-upside-potential').value) || 3;
+            unit.opPain = parseInt(document.getElementById('edit-unit-op-pain').value) || 1;
+            unit.stratNotes = document.getElementById('edit-unit-strat-notes').value.trim();
+
+            // Auto-calculate metrics
+            calculateUnitStrategicMetrics(unit);
 
             saveRealEstate();
             renderBuildingDetail();

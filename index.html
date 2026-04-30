@@ -32,6 +32,7 @@
                 <a href="#" class="menu-item active" data-tab="visao-geral"><i class="fa-solid fa-chart-pie"></i> Visão Geral</a>
                 <a href="#" class="menu-item" data-tab="meus-ativos"><i class="fa-solid fa-wallet"></i> Meus Ativos</a>
                 <a href="#" class="menu-item" data-tab="imobiliaria"><i class="fa-solid fa-city"></i> Real Estate</a>
+                <a href="#" class="menu-item" data-tab="gestao-patrimonial"><i class="fa-solid fa-shield-halved"></i> Gestão Patrimonial</a>
                 <a href="#" class="menu-item"><i class="fa-solid fa-arrow-trend-up"></i> Rentabilidade</a>
                 <a href="#" class="menu-item"><i class="fa-solid fa-gear"></i> Configurações</a>
             </nav>
@@ -453,6 +454,205 @@
                     </div>
                 </section>
             </div> <!-- End imobiliaria tab -->
+            
+            <!-- Tab: Gestão Patrimonial -->
+            <div id="gestao-patrimonial" class="tab-content">
+                <!-- Summary Cards Patrimoniais -->
+                <section class="summary-cards" style="margin-bottom: 32px;">
+                    <div class="card premium-card">
+                        <div class="card-icon"><i class="fa-solid fa-gem"></i></div>
+                        <div class="card-info">
+                            <h3>Patrimônio Estimado</h3>
+                            <h2 id="strat-total-equity">R$ 0,00</h2>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon green"><i class="fa-solid fa-money-bill-trend-up"></i></div>
+                        <div class="card-info">
+                            <h3>Receita Líquida (Mês)</h3>
+                            <h2 id="strat-net-revenue">R$ 0,00</h2>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <div class="card-icon blue"><i class="fa-solid fa-percent"></i></div>
+                        <div class="card-info">
+                            <h3>Yield Líquido Médio (Ano)</h3>
+                            <h2 id="strat-avg-yield">0.00%</h2>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Filtros Estratégicos -->
+                <section class="glass-panel" style="margin-bottom: 32px; padding: 20px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                        <h2 style="font-size: 18px; font-weight: 600;"><i class="fa-solid fa-filter" style="margin-right: 8px;"></i> Filtros Estratégicos</h2>
+                        <button class="btn-primary" onclick="window.openBatchEditStrategic()" style="width: auto; margin-bottom: 0; padding: 10px 20px; background: rgba(255,255,255,0.05); color: var(--text-primary); border: 1px solid var(--border-color); font-size: 12px; border-radius: 8px; cursor: pointer;">
+                            <i class="fa-solid fa-list-check" style="margin-right: 6px;"></i> Análise Estratégica em Lote
+                        </button>
+                    </div>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px;">
+                        <div class="input-group">
+                            <label style="font-size: 11px;">Empreendimento</label>
+                            <select id="filter-strat-building" class="premium-select" onchange="window.updateStrategicDashboard()"></select>
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 11px;">Classe (A/B/C/D)</label>
+                            <select id="filter-strat-class" class="premium-select" onchange="window.updateStrategicDashboard()">
+                                <option value="all">Todas as Classes</option>
+                                <option value="A">Classe A</option>
+                                <option value="B">Classe B</option>
+                                <option value="C">Classe C</option>
+                                <option value="D">Classe D</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 11px;">Estratégia</label>
+                            <select id="filter-strat-strategy" class="premium-select" onchange="window.updateStrategicDashboard()">
+                                <option value="all">Todas as Estratégias</option>
+                                <option value="manter">Manter</option>
+                                <option value="venda">Venda</option>
+                                <option value="reforma">Reforma / Capex</option>
+                                <option value="desenvolvimento">Desenvolvimento</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 11px;">Risco</label>
+                            <select id="filter-strat-risk" class="premium-select" onchange="window.updateStrategicDashboard()">
+                                <option value="all">Todos os Riscos</option>
+                                <option value="low">Baixo (1-2)</option>
+                                <option value="medium">Médio (3)</option>
+                                <option value="high">Alto (4-5)</option>
+                            </select>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Gráficos de Concentração -->
+                <div class="dashboard-grid" style="margin-bottom: 32px;">
+                    <section class="chart-section glass-panel">
+                        <div class="section-header">
+                            <h2>Concentração por Tipo de Ativo</h2>
+                        </div>
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="chart-strat-type"></canvas>
+                        </div>
+                    </section>
+                    <section class="chart-section glass-panel">
+                        <div class="section-header">
+                            <h2>Concentração por Região</h2>
+                        </div>
+                        <div class="chart-container" style="height: 300px;">
+                            <canvas id="chart-strat-region"></canvas>
+                        </div>
+                    </section>
+                </div>
+
+                <!-- Rankings e Listas -->
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(380px, 1fr)); gap: 24px;">
+                    <!-- Top Yield -->
+                    <section class="glass-panel" style="padding: 20px;">
+                        <div class="section-header">
+                            <h2><i class="fa-solid fa-chart-line" style="color:var(--accent-green);"></i> Top 10 Yield</h2>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="premium-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ativo</th>
+                                        <th>Yield (aa)</th>
+                                        <th>Classe</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-strat-top-yield"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Top Valor -->
+                    <section class="glass-panel" style="padding: 20px;">
+                        <div class="section-header">
+                            <h2><i class="fa-solid fa-crown" style="color:var(--accent-gold);"></i> Top 10 Valor</h2>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="premium-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ativo</th>
+                                        <th>Valor Mercado</th>
+                                        <th>Score</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-strat-top-value"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Maiores Riscos -->
+                    <section class="glass-panel" style="padding: 20px;">
+                        <div class="section-header">
+                            <h2><i class="fa-solid fa-triangle-exclamation" style="color:var(--accent-red);"></i> Maior Risco</h2>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="premium-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ativo</th>
+                                        <th>Jurídico</th>
+                                        <th>Inquilino</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-strat-high-risk"></tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Recomendações -->
+                    <section class="glass-panel" style="padding: 20px;">
+                        <div class="section-header">
+                            <h2><i class="fa-solid fa-lightbulb" style="color:var(--accent-blue);"></i> Estratégia</h2>
+                        </div>
+                        <div class="table-responsive">
+                            <table class="premium-table">
+                                <thead>
+                                    <tr>
+                                        <th>Ativo</th>
+                                        <th>Estratégia</th>
+                                        <th>Liquidez</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="table-strat-recommendation"></tbody>
+                            </table>
+                        </div>
+                    </section>
+                </div>
+
+                <div class="section-header" style="margin: 32px 0 24px; display: flex; justify-content: space-between; align-items: center;">
+                    <h2>Análise Detalhada do Portfólio</h2>
+                    <button class="btn-primary" onclick="window.openBatchEditStrategic()" style="width: auto; margin-bottom: 0;">
+                        <i class="fa-solid fa-table-list"></i> Edição em Lote Estratégica
+                    </button>
+                </div>
+
+                <section class="glass-panel" style="padding: 0;">
+                    <div class="table-responsive">
+                        <table class="premium-table">
+                            <thead>
+                                <tr>
+                                    <th>Classe</th>
+                                    <th>Ativo</th>
+                                    <th>Tipo</th>
+                                    <th>Valor Mercado</th>
+                                    <th>Receita Líq.</th>
+                                    <th>Yield (aa)</th>
+                                    <th>Score</th>
+                                    <th>Estratégia</th>
+                                </tr>
+                            </thead>
+                            <tbody id="table-strat-full"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </div> <!-- End gestao-patrimonial tab -->
 
         </main>
     </div>
@@ -617,9 +817,179 @@
                     <input type="number" id="edit-unit-paid-installments" min="0" placeholder="Ex: 3">
                 </div>
                 <div class="input-group">
-                    <label>Observações</label>
+                    <label>Observações Operacionais</label>
                     <input type="text" id="edit-unit-notes" placeholder="Ex: Contrato até 12/2026">
                 </div>
+
+                <!-- Strategic Management Section -->
+                <details class="strategic-details" style="margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px;">
+                    <summary style="cursor: pointer; color: var(--accent-blue); font-weight: 600; font-size: 13px; margin-bottom: 10px;">
+                        <i class="fa-solid fa-shield-halved" style="margin-right: 6px;"></i> Gestão Estratégica / Patrimonial
+                    </summary>
+                    <div style="display: flex; flex-direction: column; gap: 12px; padding: 10px; background: rgba(255,255,255,0.03); border-radius: 8px;">
+                        <div class="input-group">
+                            <label style="font-size: 11px;">Tipo de Ativo</label>
+                            <select id="edit-unit-type" class="premium-select">
+                                <option value="">Selecione...</option>
+                                <option value="Residencial">Residencial</option>
+                                <option value="Comercial">Comercial</option>
+                                <option value="Logístico">Logístico</option>
+                                <option value="Terreno">Terreno</option>
+                                <option value="Outros">Outros</option>
+                            </select>
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 11px;">Valor de Mercado Estimado (R$)</label>
+                            <input type="number" id="edit-unit-market-value" step="0.01" placeholder="Ex: 500000">
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Data Avaliação</label>
+                                <input type="date" id="edit-unit-eval-date">
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Fonte Avaliação</label>
+                                <input type="text" id="edit-unit-eval-source" placeholder="Ex: Laudo, ITBI">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Status Patrimonial</label>
+                                <select id="edit-unit-patrimonial-status" class="premium-select">
+                                    <option value="operacional">Operacional</option>
+                                    <option value="reforma">Em Reforma</option>
+                                    <option value="inventario">Em Inventário</option>
+                                    <option value="litigio">Em Litígio</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Estratégia</label>
+                                <select id="edit-unit-strategy" class="premium-select">
+                                    <option value="manter">Manter</option>
+                                    <option value="venda">Venda</option>
+                                    <option value="reforma">Reforma</option>
+                                    <option value="desenvolvimento">Desenvolver</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-top: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">Despesas Estratégicas (Mensais)</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 11px;">IPTU Mês</label>
+                                <input type="number" id="edit-unit-iptu-monthly" step="0.01">
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Condomínio Mês</label>
+                                <input type="number" id="edit-unit-condo-monthly" step="0.01">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Adm Fixa / Taxas</label>
+                                <input type="number" id="edit-unit-adm-fee-fixed" step="0.01">
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Seguro Mês</label>
+                                <input type="number" id="edit-unit-insurance-monthly" step="0.01">
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Manut. Média</label>
+                                <input type="number" id="edit-unit-maintenance-monthly" step="0.01">
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Capex Previsto</label>
+                                <input type="number" id="edit-unit-capex-planned" step="0.01">
+                            </div>
+                        </div>
+                        <div style="font-size: 11px; font-weight: 600; color: var(--text-secondary); margin-top: 4px; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 4px;">Riscos e Qualidade (1-5)</div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Risco Jurídico</label>
+                                <select id="edit-unit-risk-legal" class="premium-select">
+                                    <option value="1">1 (Baixo)</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3 (Médio)</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5 (Alto)</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Risco Inquilino</label>
+                                <select id="edit-unit-risk-tenant" class="premium-select">
+                                    <option value="1">1 (Baixo)</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3 (Médio)</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5 (Alto)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Liquidez</label>
+                                <select id="edit-unit-liquidity" class="premium-select">
+                                    <option value="1">1 (Nula)</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3 (Média)</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5 (Alta)</option>
+                                </select>
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Doc Quality</label>
+                                <select id="edit-unit-doc-quality" class="premium-select">
+                                    <option value="1">1 (Péssima)</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3 (Regular)</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5 (Excelente)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Garantia</label>
+                                <input type="text" id="edit-unit-guarantee" placeholder="Ex: Seguro, Fiador">
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Potencial Valorização</label>
+                                <select id="edit-unit-upside-potential" class="premium-select">
+                                    <option value="1">1 (Baixo)</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3 (Médio)</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5 (Alto)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Vacância (12m)</label>
+                                <input type="number" id="edit-unit-vacancy-12m" placeholder="Dias">
+                            </div>
+                            <div class="input-group">
+                                <label style="font-size: 11px;">Dor Operacional</label>
+                                <select id="edit-unit-op-pain" class="premium-select">
+                                    <option value="1">1 (Baixa)</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3 (Média)</option>
+                                    <option value="4">4</option>
+                                    <option value="5">5 (Alta)</option>
+                                </select>
+                            </div>
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 11px;">Inadimplência (12m - R$)</label>
+                            <input type="number" id="edit-unit-default-12m">
+                        </div>
+                        <div class="input-group">
+                            <label style="font-size: 11px;">Observação Estratégica</label>
+                            <textarea id="edit-unit-strat-notes" style="width: 100%; background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.1); border-radius: 6px; color: #fff; padding: 8px; font-size: 12px; min-height: 60px;"></textarea>
+                        </div>
+                    </div>
+                </details>
                 <button type="submit" class="btn-primary" style="margin-top: 8px;">
                     <i class="fa-solid fa-floppy-disk"></i> Salvar Alterações
                 </button>
@@ -703,6 +1073,10 @@
         </div>
     </div>
 
+            </div>
+        </div>
+    </div>
+
     <!-- Modal: Edição em Lote (Imobiliário) -->
     <div id="modal-batch-edit" class="modal-overlay">
         <div class="modal-content glass-panel" style="max-width: 95%; width: 1200px; max-height: 90vh; display: flex; flex-direction: column;">
@@ -738,6 +1112,52 @@
                 <button class="btn-secondary" onclick="document.getElementById('modal-batch-edit').classList.remove('visible')">Cancelar</button>
                 <button class="btn-primary" onclick="window.saveBatchEdit()">
                     <i class="fa-solid fa-save"></i> Salvar Todas as Alterações
+                </button>
+            </div>
+        </div>
+    </div>
+    <div id="modal-batch-edit-strategic" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 98%; width: 1400px; max-height: 95vh; display: flex; flex-direction: column;">
+            <div class="section-header" style="margin-bottom: 20px;">
+                <div>
+                    <h3>Edição em Lote Estratégica / Patrimonial</h3>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary);">Preencha valores de mercado, riscos e avaliações estratégicas para análise de portfólio.</p>
+                </div>
+                <button class="btn-close" type="button" onclick="document.getElementById('modal-batch-edit-strategic').classList.remove('visible')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            
+            <div style="flex: 1; overflow: auto; margin-bottom: 20px; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);">
+                <table class="premium-table" style="min-width: 1800px;">
+                    <thead>
+                        <tr>
+                            <th style="width: 150px;">Unidade</th>
+                            <th style="width: 140px;">Tipo Ativo</th>
+                            <th style="width: 130px;">Valor Mercado</th>
+                            <th style="width: 120px;">Estratégia</th>
+                            <th style="width: 90px;">IPTU Mês</th>
+                            <th style="width: 90px;">Condo Mês</th>
+                            <th style="width: 90px;">Adm Fixa</th>
+                            <th style="width: 90px;">Seguro</th>
+                            <th style="width: 90px;">Manut.</th>
+                            <th style="width: 80px;">Risco Jur.</th>
+                            <th style="width: 80px;">Risco Inq.</th>
+                            <th style="width: 80px;">Liq.</th>
+                            <th style="width: 80px;">Doc Qual.</th>
+                            <th style="width: 80px;">Upside</th>
+                            <th style="width: 80px;">Dor Op.</th>
+                            <th>Obs. Estratégica</th>
+                        </tr>
+                    </thead>
+                    <tbody id="batch-edit-strategic-body">
+                        <!-- Gerado via JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div style="display: flex; justify-content: flex-end; gap: 12px;">
+                <button class="btn-secondary" onclick="document.getElementById('modal-batch-edit-strategic').classList.remove('visible')">Cancelar</button>
+                <button class="btn-primary" onclick="window.saveBatchEditStrategic()">
+                    <i class="fa-solid fa-save"></i> Salvar Análise Estratégica
                 </button>
             </div>
         </div>
