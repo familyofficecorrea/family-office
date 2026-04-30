@@ -382,6 +382,92 @@ function getEffectiveRent(u) {
 }
 window.getEffectiveRent = getEffectiveRent;
 
+function getOccupancyInfo(building) {
+    const units = building.units || [];
+    const activeUnits = units.filter(u => u.status !== 'vendido');
+    const total = activeUnits.length;
+    const rented = activeUnits.filter(u => u.status === 'alugado').length;
+    const sold = units.filter(u => u.status === 'vendido').length;
+    const available = activeUnits.filter(u => u.status === 'disponivel').length;
+    const occupied = rented;
+    const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
+    const todayStr = new Date().toISOString().split('T')[0];
+    const totalRent = units.filter(u => u.status === 'alugado').reduce((s, u) => {
+        if (u.rentStartDate && u.rentStartDate > todayStr) return s;
+        return s + getEffectiveRent(u);
+    }, 0);
+    const totalSales = units.filter(u => u.status === 'vendido').reduce((s, u) => s + (u.saleValue || 0), 0);
+
+    // Installment receivables calculation
+    let totalReceived = 0;
+    let totalPending = 0;
+    let totalMonthlyInstallments = 0;
+    units.filter(u => u.status === 'vendido').forEach(u => {
+        const downPay = u.downPayment || 0;
+        const count = u.installmentCount || 0;
+        const paid = u.paidInstallments || 0;
+        const financed = (u.saleValue || 0) - downPay;
+        const installmentVal = count > 0 ? financed / count : 0;
+        const receivedFromInstallments = paid * installmentVal;
+        totalReceived += downPay + receivedFromInstallments;
+        totalPending += (count - paid) * installmentVal;
+        
+        if (count > 0 && paid < count) {
+            if (!u.installmentStartDate || u.installmentStartDate <= todayStr) {
+                totalMonthlyInstallments += installmentVal;
+            }
+        }
+    });
+
+    let barClass = 'occupancy-low';
+    if (pct >= 90) barClass = 'occupancy-full';
+    else if (pct >= 60) barClass = 'occupancy-high';
+    else if (pct >= 30) barClass = 'occupancy-medium';
+
+    return { total, rented, sold, available, occupied, pct, barClass, totalRent, totalSales, totalReceived, totalPending, totalMonthlyInstallments };
+}
+
+function renderBuildingCard(building) {
+    const info = getOccupancyInfo(building);
+
+    return `
+        <div class="building-card" data-building-id="${building.id}">
+            <button class="building-card-delete" data-delete-building="${building.id}" title="Excluir Imóvel">
+                <i class="fa-solid fa-trash-can"></i>
+            </button>
+            <div class="building-card-title">
+                <div class="building-card-icon">
+                    <i class="fa-solid fa-building"></i>
+                </div>
+                <div>
+                    <div class="building-card-name">${building.name}</div>
+                    ${building.address ? `<div class="building-card-address"><i class="fa-solid fa-location-dot" style="margin-right:4px;"></i>${building.address}</div>` : ''}
+                </div>
+            </div>
+            <div class="building-card-stats">
+                <div class="card-stat-mini">
+                    <span class="label">Ocupação</span>
+                    <span class="value">${info.pct}%</span>
+                </div>
+                <div class="card-stat-mini">
+                    <span class="label">Aluguel (Mês)</span>
+                    <span class="value">${formatCurrency(info.totalRent)}</span>
+                </div>
+            </div>
+            <div class="card-stat-bar-container">
+                <div class="card-stat-bar ${info.barClass}" style="width: ${info.pct}%"></div>
+            </div>
+            <div class="building-card-footer">
+                <span>${info.rented} alugados · ${info.available} disponíveis</span>
+                <button class="btn-card-action" onclick="openBuildingDetail(${building.id})">
+                    Detalhes <i class="fa-solid fa-arrow-right"></i>
+                </button>
+            </div>
+        </div>
+    `;
+}
+window.renderBuildingCard = renderBuildingCard;
+
 function updateRealEstateUI() {
     const grid = document.getElementById('re-buildings-grid');
     if (!grid) return;
@@ -1582,115 +1668,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
 
 
-    function getOccupancyInfo(building) {
-        const units = building.units || [];
-        const activeUnits = units.filter(u => u.status !== 'vendido');
-        const total = activeUnits.length;
-        const rented = activeUnits.filter(u => u.status === 'alugado').length;
-        const sold = units.filter(u => u.status === 'vendido').length;
-        const available = activeUnits.filter(u => u.status === 'disponivel').length;
-        const occupied = rented;
-        const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
-        const todayStr = new Date().toISOString().split('T')[0];
-        const totalRent = units.filter(u => u.status === 'alugado').reduce((s, u) => {
-            if (u.rentStartDate && u.rentStartDate > todayStr) return s;
-            return s + getEffectiveRent(u);
-        }, 0);
-        const totalSales = units.filter(u => u.status === 'vendido').reduce((s, u) => s + (u.saleValue || 0), 0);
 
-        // Installment receivables calculation
-        let totalReceived = 0;
-        let totalPending = 0;
-        let totalMonthlyInstallments = 0;
-        units.filter(u => u.status === 'vendido').forEach(u => {
-            const downPay = u.downPayment || 0;
-            const count = u.installmentCount || 0;
-            const paid = u.paidInstallments || 0;
-            const financed = (u.saleValue || 0) - downPay;
-            const installmentVal = count > 0 ? financed / count : 0;
-            const receivedFromInstallments = paid * installmentVal;
-            totalReceived += downPay + receivedFromInstallments;
-            totalPending += (count - paid) * installmentVal;
-            
-            if (count > 0 && paid < count) {
-                if (!u.installmentStartDate || u.installmentStartDate <= todayStr) {
-                    totalMonthlyInstallments += installmentVal;
-                }
-            }
-        });
-
-        let barClass = 'occupancy-low';
-        if (pct >= 90) barClass = 'occupancy-full';
-        else if (pct >= 60) barClass = 'occupancy-high';
-        else if (pct >= 30) barClass = 'occupancy-medium';
-
-        return { total, rented, sold, available, occupied, pct, barClass, totalRent, totalSales, totalReceived, totalPending, totalMonthlyInstallments };
-    }
-
-    function renderBuildingCard(building) {
-        const info = getOccupancyInfo(building);
-
-        return `
-            <div class="building-card" data-building-id="${building.id}">
-                <button class="building-card-delete" data-delete-building="${building.id}" title="Excluir Imóvel">
-                    <i class="fa-solid fa-trash-can"></i>
-                </button>
-                <div class="building-card-header">
-                    <div class="building-card-title">
-                        <div class="building-card-icon">
-                            <i class="fa-solid fa-building"></i>
-                        </div>
-                        <div>
-                            <div class="building-card-name">${building.name}</div>
-                            ${building.address ? `<div class="building-card-address"><i class="fa-solid fa-location-dot" style="margin-right:4px;"></i>${building.address}</div>` : ''}
-                        </div>
-                    </div>
-                    <span class="building-card-units-badge">${info.total} unid.</span>
-                </div>
-
-                <div class="occupancy-bar-container">
-                    <div class="occupancy-bar-label">
-                        <span>Ocupação</span>
-                        <span class="occupancy-bar-pct">${info.pct}%</span>
-                    </div>
-                    <div class="occupancy-bar">
-                        <div class="occupancy-bar-fill ${info.barClass}" style="width: ${info.pct}%"></div>
-                    </div>
-                </div>
-
-                <div class="building-card-stats">
-                    <div class="building-stat">
-                        <span class="building-stat-label">Alugados</span>
-                        <span class="building-stat-value green">${info.rented}</span>
-                    </div>
-                    <div class="building-stat">
-                        <span class="building-stat-label">Vendidos</span>
-                        <span class="building-stat-value red">${info.sold}</span>
-                    </div>
-                    <div class="building-stat">
-                        <span class="building-stat-label">Disponíveis</span>
-                        <span class="building-stat-value gold">${info.available}</span>
-                    </div>
-                </div>
-
-                <div class="building-card-footer">
-                    <div class="building-revenue">
-                        <span class="building-revenue-label">Renda Mensal (Alug.+Parc.)</span>
-                        <span class="building-revenue-value">${formatCurrency(info.totalRent + info.totalMonthlyInstallments)}</span>
-                    </div>
-                    ${info.totalSales > 0 ? `
-                    <div class="building-revenue">
-                        <span class="building-revenue-label">Receita Vendas</span>
-                        <span class="building-revenue-value" style="color: var(--accent-red);">${formatCurrency(info.totalSales)}</span>
-                    </div>
-                    ` : ''}
-                    <div class="building-card-arrow">
-                        <i class="fa-solid fa-chevron-right"></i>
-                    </div>
-                </div>
-            </div>
-        `;
-    }
 
     function renderBuildingDetail() {
         const building = real_estate.find(b => b.id === _currentBuildingId);
