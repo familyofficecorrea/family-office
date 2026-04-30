@@ -2807,8 +2807,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         saveRealEstate();
         document.getElementById('modal-batch-edit-strategic').classList.remove('visible');
         updateStrategicDashboard();
-    };
-     // If detail panel is open, refresh it too
+
+        // If detail panel is open, refresh it too
         if (_currentBuildingId) {
             const building = real_estate.find(b => b.id === _currentBuildingId);
             if (building) {
