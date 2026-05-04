@@ -203,6 +203,7 @@ function updateAssetListUI() {
         `;
         assetList.appendChild(li);
     });
+}
 window.updateAssetListUI = updateAssetListUI;
 
 function updateDetailedPortfolioUI() {
@@ -435,33 +436,58 @@ function renderBuildingCard(building) {
             <button class="building-card-delete" data-delete-building="${building.id}" title="Excluir Imóvel">
                 <i class="fa-solid fa-trash-can"></i>
             </button>
-            <div class="building-card-title">
-                <div class="building-card-icon">
-                    <i class="fa-solid fa-building"></i>
+            <div class="building-card-header">
+                <div class="building-card-title">
+                    <div class="building-card-icon">
+                        <i class="fa-solid fa-building"></i>
+                    </div>
+                    <div>
+                        <div class="building-card-name">${building.name}</div>
+                        ${building.address ? `<div class="building-card-address"><i class="fa-solid fa-location-dot" style="margin-right:4px;"></i>${building.address}</div>` : ''}
+                    </div>
                 </div>
-                <div>
-                    <div class="building-card-name">${building.name}</div>
-                    ${building.address ? `<div class="building-card-address"><i class="fa-solid fa-location-dot" style="margin-right:4px;"></i>${building.address}</div>` : ''}
+                <span class="building-card-units-badge">${info.total} unid.</span>
+            </div>
+
+            <div class="occupancy-bar-container">
+                <div class="occupancy-bar-label">
+                    <span>Ocupação</span>
+                    <span class="occupancy-bar-pct">${info.pct}%</span>
+                </div>
+                <div class="occupancy-bar">
+                    <div class="occupancy-bar-fill ${info.barClass}" style="width: ${info.pct}%"></div>
                 </div>
             </div>
+
             <div class="building-card-stats">
-                <div class="card-stat-mini">
-                    <span class="label">Ocupação</span>
-                    <span class="value">${info.pct}%</span>
+                <div class="building-stat">
+                    <span class="building-stat-label">Alugados</span>
+                    <span class="building-stat-value green">${info.rented}</span>
                 </div>
-                <div class="card-stat-mini">
-                    <span class="label">Aluguel (Mês)</span>
-                    <span class="value">${formatCurrency(info.totalRent)}</span>
+                <div class="building-stat">
+                    <span class="building-stat-label">Vendidos</span>
+                    <span class="building-stat-value red">${info.sold}</span>
+                </div>
+                <div class="building-stat">
+                    <span class="building-stat-label">Disponíveis</span>
+                    <span class="building-stat-value gold">${info.available}</span>
                 </div>
             </div>
-            <div class="card-stat-bar-container">
-                <div class="card-stat-bar ${info.barClass}" style="width: ${info.pct}%"></div>
-            </div>
+
             <div class="building-card-footer">
-                <span>${info.rented} alugados · ${info.available} disponíveis</span>
-                <button class="btn-card-action" onclick="openBuildingDetail(${building.id})">
-                    Detalhes <i class="fa-solid fa-arrow-right"></i>
-                </button>
+                <div class="building-revenue">
+                    <span class="building-revenue-label">Renda Mensal (Alug.+Parc.)</span>
+                    <span class="building-revenue-value">${formatCurrency(info.totalRent + info.totalMonthlyInstallments)}</span>
+                </div>
+                ${info.totalSales > 0 ? `
+                <div class="building-revenue">
+                    <span class="building-revenue-label">Receita Vendas</span>
+                    <span class="building-revenue-value" style="color: var(--accent-red);">${formatCurrency(info.totalSales)}</span>
+                </div>
+                ` : ''}
+                <div class="building-card-arrow" onclick="openBuildingDetail(${building.id})">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </div>
             </div>
         </div>
     `;
