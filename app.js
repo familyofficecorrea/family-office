@@ -518,8 +518,39 @@ function updateRealEstateSummary() {
 
     real_estate.forEach(b => {
         if (b.id === 'conta_azul_geral') {
-            (b.units || []).forEach(u => {
-                totalOtherIncome += (u.saleValue || 0);
+            const units = b.units || [];
+            let latestMMYYYY = null;
+            let latestDateObj = null;
+
+            // Encontra a competência mais recente (MM/YYYY)
+            units.forEach(u => {
+                let dStr = u.date;
+                if (!dStr) {
+                    const match = u.label.match(/\((\d{2}\/\d{2}\/\d{4})\)/);
+                    if (match) dStr = match[1];
+                }
+                if (dStr) {
+                    const p = dStr.split('/');
+                    if (p.length === 3) {
+                        const dObj = new Date(p[2], parseInt(p[1])-1, p[0]);
+                        if (!latestDateObj || dObj > latestDateObj) {
+                            latestDateObj = dObj;
+                            latestMMYYYY = `${p[1]}/${p[2]}`;
+                        }
+                    }
+                }
+            });
+
+            // Soma apenas do mês mais recente
+            units.forEach(u => {
+                let dStr = u.date;
+                if (!dStr) {
+                    const match = u.label.match(/\((\d{2}\/\d{2}\/\d{4})\)/);
+                    if (match) dStr = match[1];
+                }
+                if (!latestMMYYYY || (dStr && dStr.endsWith(latestMMYYYY))) {
+                    totalOtherIncome += (u.saleValue || 0);
+                }
             });
             return;
         }
@@ -559,10 +590,48 @@ function renderOutrasReceitas() {
         return;
     }
 
-    section.style.display = 'block';
-    list.innerHTML = '';
+    let latestMMYYYY = null;
+    let latestDateObj = null;
 
     generalBuilding.units.forEach(u => {
+        let dStr = u.date;
+        if (!dStr) {
+            const match = u.label.match(/\((\d{2}\/\d{2}\/\d{4})\)/);
+            if (match) dStr = match[1];
+        }
+        if (dStr) {
+            const p = dStr.split('/');
+            if (p.length === 3) {
+                const dObj = new Date(p[2], parseInt(p[1])-1, p[0]);
+                if (!latestDateObj || dObj > latestDateObj) {
+                    latestDateObj = dObj;
+                    latestMMYYYY = `${p[1]}/${p[2]}`;
+                }
+            }
+        }
+    });
+
+    section.style.display = 'block';
+    
+    // Atualiza o título dinamicamente com o mês
+    const titleH2 = section.querySelector('h2');
+    if (titleH2) {
+        titleH2.innerHTML = `<i class="fa-solid fa-coins" style="margin-right: 8px; color: var(--accent-gold);"></i>Outras Receitas ${latestMMYYYY ? `(${latestMMYYYY})` : '(Importadas)'}`;
+    }
+
+    list.innerHTML = '';
+
+    // Filtra e renderiza apenas o mês mais recente
+    const unitsToShow = generalBuilding.units.filter(u => {
+        let dStr = u.date;
+        if (!dStr) {
+            const match = u.label.match(/\((\d{2}\/\d{2}\/\d{4})\)/);
+            if (match) dStr = match[1];
+        }
+        return !latestMMYYYY || (dStr && dStr.endsWith(latestMMYYYY));
+    });
+
+    unitsToShow.forEach(u => {
         const li = document.createElement('li');
         li.style.cssText = 'display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; border-bottom: 1px solid rgba(255,255,255,0.05);';
         li.innerHTML = `
@@ -3194,7 +3263,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                                 downPayment: rowData.value, // It's fully paid
                                 installmentCount: 0,
                                 paidInstallments: 0,
-                                notes: 'Importado Conta Azul'
+                                notes: 'Importado Conta Azul',
+                                date: rowData.date
                             });
                             
                             rowData.isGeneral = true; // Mark as processed
