@@ -203,6 +203,21 @@ def save_real_estate_endpoint():
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+@app.route('/api/real_estate/seed', methods=['POST'])
+def seed_real_estate():
+    """POST /api/real_estate/seed → Lê real_estate_data.json do disco e salva no MongoDB, resetando os dados."""
+    try:
+        if not os.path.exists(REAL_ESTATE_FILE):
+            return jsonify({'success': False, 'error': 'Arquivo real_estate_data.json não encontrado no disco.'}), 404
+        with open(REAL_ESTATE_FILE, 'r', encoding='utf-8') as f:
+            re_list = json.load(f)
+        with _re_lock:
+            _save_real_estate(re_list)
+        total_units = sum(len(b.get('units', [])) for b in re_list)
+        return jsonify({'success': True, 'buildings': len(re_list), 'units': total_units, 'version': _re_version})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
 
 # ─── Endpoint: Adicionar um ativo ────────────────────────────────────────────
 @app.route('/api/assets/add', methods=['POST'])
