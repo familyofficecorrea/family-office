@@ -1754,6 +1754,21 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit-building-id').value = building.id;
         document.getElementById('edit-building-name').value = building.name || '';
         document.getElementById('edit-building-address').value = building.address || '';
+        
+        // Popular dropdown de mesclagem
+        const select = document.getElementById('edit-building-merge-target');
+        if (select) {
+            select.innerHTML = '<option value="">Não mesclar (Manter separado)</option>';
+            real_estate.forEach(b => {
+                if (b.id !== building.id && b.id !== 'conta_azul_geral') {
+                    const opt = document.createElement('option');
+                    opt.value = b.id;
+                    opt.textContent = b.name || b.address;
+                    select.appendChild(opt);
+                }
+            });
+        }
+        
         document.getElementById('modal-edit-building').classList.add('visible');
     };
     window.updateNetYieldPreview = () => {
@@ -2773,10 +2788,37 @@ document.addEventListener('DOMContentLoaded', async () => {
             const buildingId = parseInt(document.getElementById('edit-building-id').value);
             const building = real_estate.find(b => b.id === buildingId);
             if (!building) return;
-
+            
+            const mergeTargetId = document.getElementById('edit-building-merge-target').value;
+            
+            if (mergeTargetId) {
+                const targetBuilding = real_estate.find(b => b.id === parseInt(mergeTargetId));
+                if (targetBuilding) {
+                    if (confirm(`Tem certeza que deseja mesclar este imóvel com "${targetBuilding.name}"? Todas as unidades serão transferidas e este imóvel será excluído.`)) {
+                        // Transfere as unidades
+                        building.units.forEach(u => {
+                            const maxId = targetBuilding.units.reduce((max, un) => Math.max(max, un.id), 0);
+                            u.id = maxId + 1;
+                            targetBuilding.units.push(u);
+                        });
+                        targetBuilding.totalUnits = targetBuilding.units.length;
+                        
+                        // Remove o imóvel atual
+                        real_estate = real_estate.filter(b => b.id !== buildingId);
+                        
+                        saveRealEstate();
+                        
+                        // Fecha o modal e o painel de detalhes
+                        document.getElementById('modal-edit-building').classList.remove('visible');
+                        window.closeBuildingDetail();
+                        return;
+                    }
+                }
+            }
+            
             building.name = document.getElementById('edit-building-name').value.trim();
             building.address = document.getElementById('edit-building-address').value.trim();
-
+            
             saveRealEstate();
             
             // Update detail panel header
