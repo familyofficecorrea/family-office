@@ -2002,13 +2002,48 @@ document.addEventListener('DOMContentLoaded', async () => {
             units = units.filter(u => u.status === _currentUnitFilter);
         }
 
+        let displayUnits = [];
+        const groups = {};
+        
+        units.forEach(u => {
+            if (u.contractGroup && (u.status === 'alugado' || u.status === 'inadimplente')) {
+                if (!groups[u.contractGroup]) groups[u.contractGroup] = [];
+                groups[u.contractGroup].push(u);
+            } else {
+                displayUnits.push(u);
+            }
+        });
+        
+        Object.keys(groups).forEach(groupName => {
+            const groupUnits = groups[groupName];
+            // Create a synthetic unit for rendering
+            const syntheticUnit = {
+                id: `group_${groupName}`, // Special string ID
+                label: groupUnits.map(un => un.label).join(' + '),
+                status: groupUnits[0].status, // assume same status
+                tenantName: groupUnits[0].tenantName,
+                rentValue: groupUnits.reduce((max, un) => Math.max(max, un.rentValue || 0), 0),
+                monthlyReceipts: groupUnits.reduce((acc, un) => {
+                    if (un.monthlyReceipts) {
+                        Object.entries(un.monthlyReceipts).forEach(([k, v]) => {
+                            acc[k] = (acc[k] || 0) + v;
+                        });
+                    }
+                    return acc;
+                }, {}),
+                notes: `Contrato Unificado`,
+                contractGroup: groupName
+            };
+            displayUnits.push(syntheticUnit);
+        });
+
         const unitsGrid = document.getElementById('units-grid');
-        if (units.length === 0) {
+        if (displayUnits.length === 0) {
             unitsGrid.innerHTML = '<div class="empty-state" style="grid-column: 1/-1; padding: 40px;">Nenhuma unidade encontrada para este filtro.</div>';
             return;
         }
 
-        unitsGrid.innerHTML = units.map(u => {
+        unitsGrid.innerHTML = displayUnits.map(u => {
             const statusLabel = u.status === 'alugado' ? 'Alugado' : u.status === 'vendido' ? 'Vendido' : u.status === 'inadimplente' ? 'Inadimplente' : 'Disponível';
             let valueHtml = '';
             if ((u.status === 'alugado' || u.status === 'inadimplente') && u.rentValue) {
@@ -2770,9 +2805,18 @@ document.addEventListener('DOMContentLoaded', async () => {
             // Otherwise, check if clicked on a unit card
             const card = e.target.closest('[data-edit-unit]');
             if (card) {
-                const unitId = parseInt(card.getAttribute('data-edit-unit'));
+                const unitIdStr = card.getAttribute('data-edit-unit');
                 const buildingId = parseInt(card.getAttribute('data-parent-building'));
-                window.editUnit(buildingId, unitId);
+                
+                if (unitIdStr.startsWith('group_')) {
+                    const groupName = unitIdStr.replace('group_', '');
+                    const building = real_estate.find(b => b.id === buildingId);
+                    const unit = building.units.find(u => u.contractGroup === groupName);
+                    if (unit) window.editUnit(buildingId, unit.id);
+                } else {
+                    const unitId = parseInt(unitIdStr);
+                    window.editUnit(buildingId, unitId);
+                }
             }
         });
     }
