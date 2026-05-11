@@ -2741,44 +2741,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         });
     }
 
-    const formAddBuilding = document.getElementById('form-add-building');
-    if (formAddBuilding) {
-        formAddBuilding.addEventListener('submit', (e) => {
-            e.preventDefault();
-            const name = document.getElementById('building-name').value.trim();
-            const qty = parseInt(document.getElementById('building-units-qty').value) || 0;
-            const prefix = document.getElementById('building-unit-prefix').value.trim() || 'Unidade';
-            const address = document.getElementById('building-address').value.trim();
 
-            if (!name || qty <= 0) return;
-
-            const units = [];
-            for (let i = 1; i <= qty; i++) {
-                units.push({
-                    id: i,
-                    label: `${prefix} ${i}`,
-                    status: 'disponivel',
-                    rentValue: 0,
-                    saleValue: 0,
-                    notes: ''
-                });
-            }
-
-            real_estate.push({
-                id: Date.now(),
-                name,
-                address,
-                totalUnits: qty,
-                units
-            });
-
-            saveRealEstate();
-            updateRealEstateUI();
-
-            document.getElementById('modal-add-building').classList.remove('visible');
-            formAddBuilding.reset();
-        });
-    }
 
     // ─── Form: Edit Building ─────────────────────────────────────────────────
     const formEditBuilding = document.getElementById('form-edit-building');
