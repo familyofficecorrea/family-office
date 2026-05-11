@@ -3698,9 +3698,40 @@ document.addEventListener('DOMContentLoaded', async () => {
         btnApplyMonthly.addEventListener('click', () => {
             let unitsUpdated = 0;
             pendingMonthlyRows.forEach(data => {
-                if (!data.unit) return; // skip unmatched rows
+                let u = data.unit;
                 
-                const u = data.unit;
+                if (!u) {
+                    // Se não encontrou a unidade, cria o imóvel e/ou a unidade
+                    if (!data.address && !data.tenantName) return; // ignora linhas totalmente vazias
+                    
+                    const address = data.address || 'Sem Endereço';
+                    let building = real_estate.find(b => b.address === address || b.name === address);
+                    
+                    if (!building) {
+                        building = {
+                            id: Date.now() + Math.floor(Math.random() * 1000),
+                            name: address,
+                            address: address,
+                            totalUnits: 0,
+                            units: []
+                        };
+                        real_estate.push(building);
+                    }
+                    
+                    const maxId = building.units.reduce((max, un) => Math.max(max, un.id), 0);
+                    u = {
+                        id: maxId + 1,
+                        label: data.tenantName || `Unidade ${maxId + 1}`,
+                        status: data.newStatus || 'disponivel',
+                        tenantName: data.tenantName || '',
+                        rentValue: data.openRent || 0,
+                        saleValue: data.openSale || 0,
+                        monthlyReceipts: {}
+                    };
+                    building.units.push(u);
+                    building.totalUnits = building.units.length;
+                }
+                
                 if (data.newStatus) u.status = data.newStatus;
                 if (data.tenantName) u.tenantName = data.tenantName;
                 if (data.openRent) u.rentValue = data.openRent;
