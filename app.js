@@ -388,9 +388,10 @@ function getOccupancyInfo(building) {
     const activeUnits = units.filter(u => u.status !== 'vendido');
     const total = activeUnits.length;
     const rented = activeUnits.filter(u => u.status === 'alugado').length;
+    const defaulting = activeUnits.filter(u => u.status === 'inadimplente').length;
     const sold = units.filter(u => u.status === 'vendido').length;
     const available = activeUnits.filter(u => u.status === 'disponivel').length;
-    const occupied = rented;
+    const occupied = rented + defaulting;
     const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
     const todayStr = new Date().toISOString().split('T')[0];
     let latestMonthKey = null;
@@ -409,7 +410,7 @@ function getOccupancyInfo(building) {
         }
     });
 
-    const totalRent = units.filter(u => u.status === 'alugado').reduce((s, u) => {
+    const totalRent = units.filter(u => u.status === 'alugado' || u.status === 'inadimplente').reduce((s, u) => {
         if (u.rentStartDate && u.rentStartDate > todayStr) return s;
         
         if (latestMonthKey && u.monthlyReceipts && u.monthlyReceipts[latestMonthKey] !== undefined) {
@@ -446,7 +447,7 @@ function getOccupancyInfo(building) {
     else if (pct >= 60) barClass = 'occupancy-high';
     else if (pct >= 30) barClass = 'occupancy-medium';
 
-    return { total, rented, sold, available, occupied, pct, barClass, totalRent, totalSales, totalReceived, totalPending, totalMonthlyInstallments };
+    return { total, rented, sold, available, occupied, pct, barClass, totalRent, totalSales, totalReceived, totalPending, totalMonthlyInstallments, defaulting };
 }
 
 function renderBuildingCard(building) {
@@ -527,21 +528,37 @@ document.addEventListener('DOMContentLoaded', () => {
     if (form) {
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            const name = document.getElementById('add-building-name').value;
-            const address = document.getElementById('add-building-address').value;
-            
+            const name = document.getElementById('building-name').value.trim();
+            const qty = parseInt(document.getElementById('building-units-qty').value) || 0;
+            const prefix = document.getElementById('building-unit-prefix').value.trim() || 'Unidade';
+            const address = document.getElementById('building-address').value.trim();
+
+            if (!name || qty < 0) return;
+
+            const units = [];
+            for (let i = 1; i <= qty; i++) {
+                units.push({
+                    id: i,
+                    label: `${prefix} ${i}`,
+                    status: 'disponivel',
+                    rentValue: 0,
+                    saleValue: 0,
+                    notes: ''
+                });
+            }
+
             const newBuilding = {
                 id: Date.now(),
                 name: name,
                 address: address,
-                totalUnits: 0,
-                units: []
+                totalUnits: qty,
+                units: units
             };
-            
+
             real_estate.push(newBuilding);
             await saveRealEstate();
             updateRealEstateUI();
-            
+
             document.getElementById('modal-add-building').classList.remove('visible');
             form.reset();
         });
@@ -1941,6 +1958,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                 </div>
             </div>
             <div class="card">
+                <div class="card-icon" style="background-color: rgba(255,160,0,0.1); color: #FFA000;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                <div class="card-info">
+                    <h3>Inadimplentes</h3>
+                    <h2 style="color: #FFA000;">${info.defaulting}</h2>
+                </div>
+            </div>
+            <div class="card">
                 <div class="card-icon" style="background-color: rgba(255,61,87,0.1); color: var(--accent-red);"><i class="fa-solid fa-tag"></i></div>
                 <div class="card-info">
                     <h3>Vendidos</h3>
@@ -1976,9 +2000,9 @@ document.addEventListener('DOMContentLoaded', async () => {
         }
 
         unitsGrid.innerHTML = units.map(u => {
-            const statusLabel = u.status === 'alugado' ? 'Alugado' : u.status === 'vendido' ? 'Vendido' : 'Disponível';
+            const statusLabel = u.status === 'alugado' ? 'Alugado' : u.status === 'vendido' ? 'Vendido' : u.status === 'inadimplente' ? 'Inadimplente' : 'Disponível';
             let valueHtml = '';
-            if (u.status === 'alugado' && u.rentValue) {
+            if ((u.status === 'alugado' || u.status === 'inadimplente') && u.rentValue) {
                 const effective = getEffectiveRent(u);
                 const displayVal = formatCurrency(effective) + '/mês';
                 valueHtml = `<div class="unit-card-value rent">${displayVal}${_showNetYield && effective < u.rentValue ? ' <span style="font-size: 10px; opacity: 0.8;">(Líquido)</span>' : ''}</div>`;

@@ -714,6 +714,7 @@
                     <select id="edit-unit-status" class="premium-select" required>
                         <option value="disponivel">🟡 Disponível</option>
                         <option value="alugado">🟢 Alugado</option>
+                        <option value="inadimplente">🟠 Inadimplente</option>
                         <option value="vendido">🔴 Vendido</option>
                     </select>
                 </div>
@@ -1031,28 +1032,7 @@
         </div>
     </div>
 
-    <!-- Modal: Adicionar Imóvel -->
-    <div id="modal-add-building" class="modal-overlay">
-        <div class="modal-content glass-panel" style="max-width: 480px; width: 100%;">
-            <div class="section-header" style="margin-bottom: 20px;">
-                <h3>Novo Imóvel</h3>
-                <button class="btn-close" type="button" onclick="document.getElementById('modal-add-building').classList.remove('visible')" style="background:none; border:none; color:var(--text-secondary); cursor:pointer; font-size:1.2rem;"><i class="fa-solid fa-xmark"></i></button>
-            </div>
-            <form id="form-add-building" style="display: flex; flex-direction: column; gap: 16px;">
-                <div class="input-group">
-                    <label>Nome do Imóvel</label>
-                    <input type="text" id="add-building-name" required placeholder="Ex: Prédio Odzun">
-                </div>
-                <div class="input-group">
-                    <label>Endereço</label>
-                    <input type="text" id="add-building-address" placeholder="Ex: Rua X, 123 - Centro">
-                </div>
-                <button type="submit" class="btn-primary" style="margin-top: 8px;">
-                    <i class="fa-solid fa-plus"></i> Criar Imóvel
-                </button>
-            </form>
-        </div>
-    </div>
+
 
     <!-- Modal: Adicionar Unidade Extra -->
     <div id="modal-add-unit" class="modal-overlay">
@@ -1071,6 +1051,7 @@
                     <select id="add-unit-status" class="premium-select">
                         <option value="disponivel">🟡 Disponível</option>
                         <option value="alugado">🟢 Alugado</option>
+                        <option value="inadimplente">🟠 Inadimplente</option>
                         <option value="vendido">🔴 Vendido</option>
                     </select>
                 </div>
