@@ -3760,9 +3760,25 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 if (!u.monthlyReceipts) u.monthlyReceipts = {};
                 
+                let latestMonth = null;
+                let latestMonthDate = null;
+                
                 for (let [mmyyyy, val] of Object.entries(data.receipts)) {
                     u.monthlyReceipts[mmyyyy] = val;
+                    
+                    const [mm, yyyy] = mmyyyy.split('/');
+                    const d = new Date(parseInt(yyyy), parseInt(mm) - 1, 1);
+                    if (!latestMonthDate || d > latestMonthDate) {
+                        latestMonthDate = d;
+                        latestMonth = mmyyyy;
+                    }
                 }
+                
+                // Se o valor no mês mais recente for zero, significa que desocupou
+                if (latestMonth && u.monthlyReceipts[latestMonth] === 0) {
+                    u.status = 'disponivel';
+                }
+                
                 unitsUpdated++;
             });
 
