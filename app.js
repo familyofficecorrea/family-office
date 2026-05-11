@@ -1979,6 +1979,8 @@ document.addEventListener('DOMContentLoaded', async () => {
                 valueHtml = `<div class="unit-card-value empty">—</div>`;
             }
 
+            const accumulated = u.monthlyReceipts ? Object.values(u.monthlyReceipts).reduce((sum, val) => sum + val, 0) : 0;
+
             return `
                 <div class="unit-card status-${u.status}" data-edit-unit="${u.id}" data-parent-building="${building.id}">
                     <button class="unit-card-delete-btn" data-delete-unit="${u.id}" data-delete-unit-building="${building.id}" title="Excluir Unidade">
@@ -1989,7 +1991,13 @@ document.addEventListener('DOMContentLoaded', async () => {
                         <span class="unit-status-badge ${u.status}">${statusLabel}</span>
                     </div>
                     ${valueHtml}
-                    ${u.notes ? `<div class="unit-card-notes"><i class="fa-solid fa-comment" style="margin-right:4px; opacity: 0.5;"></i>${u.notes}</div>` : ''}
+                    <div class="unit-card-tenant" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">
+                        <i class="fa-solid fa-user" style="margin-right: 4px;"></i>${u.tenantName || 'Sem Inquilino'}
+                    </div>
+                    <div class="unit-card-accumulated" style="font-size: 0.8rem; color: var(--accent-green); margin-top: 4px;">
+                        <i class="fa-solid fa-chart-pie" style="margin-right: 4px;"></i>Acumulado: ${formatCurrency(accumulated)}
+                    </div>
+                    ${u.notes ? `<div class="unit-card-notes" style="margin-top: 8px;"><i class="fa-solid fa-comment" style="margin-right:4px; opacity: 0.5;"></i>${u.notes}</div>` : ''}
                 </div>
             `;
         }).join('');
@@ -3695,6 +3703,9 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const u = data.unit;
                 if (data.newStatus) u.status = data.newStatus;
                 if (data.tenantName) u.tenantName = data.tenantName;
+                if (data.openRent) u.rentValue = data.openRent;
+                if (data.openSale) u.saleValue = data.openSale;
+                
                 if (!u.monthlyReceipts) u.monthlyReceipts = {};
                 
                 for (let [mmyyyy, val] of Object.entries(data.receipts)) {
