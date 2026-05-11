@@ -1979,34 +1979,49 @@ document.addEventListener('DOMContentLoaded', async () => {
         let mInst = 0;
         let mSaleVolume = 0;
         const defaultStartDate = new Date(2026, 3, 1); // April 2026
+        const mmyyyy = `${String(d.getMonth() + 1).padStart(2, '0')}/${d.getFullYear()}`;
 
         real_estate.forEach(b => {
             (b.units || []).forEach(u => {
-                if (u.status === 'alugado' && u.rentValue > 0) {
-                    if (!u.rentStartDate) {
-                        if (d >= defaultStartDate) mRent += getEffectiveRent(u);
+                // Se existe valor real registrado pela planilha mensal, usa ele
+                if (u.monthlyReceipts && u.monthlyReceipts[mmyyyy] !== undefined) {
+                    if (u.status === 'vendido') {
+                        mInst += u.monthlyReceipts[mmyyyy];
                     } else {
-                        const start = new Date(u.rentStartDate + 'T12:00:00Z');
-                        const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
-                        if (d >= startMonth) mRent += getEffectiveRent(u);
+                        mRent += u.monthlyReceipts[mmyyyy];
+                    }
+                } else {
+                    // Fallback para valores teóricos se não houver lançamento
+                    if (u.status === 'alugado' && u.rentValue > 0) {
+                        if (!u.rentStartDate) {
+                            if (d >= defaultStartDate) mRent += getEffectiveRent(u);
+                        } else {
+                            const start = new Date(u.rentStartDate + 'T12:00:00Z');
+                            const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+                            if (d >= startMonth) mRent += getEffectiveRent(u);
+                        }
+                    }
+                    if (u.status === 'vendido' && u.saleValue > 0) {
+                        if (u.installmentCount > 0 && u.installmentStartDate) {
+                            const downPay = u.downPayment || 0;
+                            const financed = u.saleValue - downPay;
+                            const installmentVal = financed / u.installmentCount;
+                            const start = new Date(u.installmentStartDate + 'T12:00:00Z');
+                            const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
+                            const endMonth = new Date(start.getFullYear(), start.getMonth() + u.installmentCount, 1);
+                            if (d >= startMonth && d < endMonth) mInst += installmentVal;
+                        }
                     }
                 }
-                if (u.status === 'vendido' && u.saleValue > 0) {
-                    if (u.installmentCount > 0 && u.installmentStartDate) {
-                        const downPay = u.downPayment || 0;
-                        const financed = u.saleValue - downPay;
-                        const installmentVal = financed / u.installmentCount;
-                        const start = new Date(u.installmentStartDate + 'T12:00:00Z');
-                        const startMonth = new Date(start.getFullYear(), start.getMonth(), 1);
-                        const endMonth = new Date(start.getFullYear(), start.getMonth() + u.installmentCount, 1);
-                        if (d >= startMonth && d < endMonth) mInst += installmentVal;
-                    }
-                    if (u.saleDate) {
-                        const saleD = new Date(u.saleDate + 'T12:00:00Z');
-                        if (saleD.getFullYear() === d.getFullYear() && saleD.getMonth() === d.getMonth()) {
-                            mSaleVolume += u.saleValue;
-                            
-                            // Adiciona a entrada (ou o valor total se for à vista) ao fluxo de caixa do mês da venda
+                
+                // Registro do volume de vendas (sempre ocorre no mês da venda, independente dos recebimentos)
+                if (u.status === 'vendido' && u.saleValue > 0 && u.saleDate) {
+                    const saleD = new Date(u.saleDate + 'T12:00:00Z');
+                    if (saleD.getFullYear() === d.getFullYear() && saleD.getMonth() === d.getMonth()) {
+                        mSaleVolume += u.saleValue;
+                        
+                        // Adiciona a entrada ao caixa se não houver registro manual sobrepondo
+                        if (!u.monthlyReceipts || u.monthlyReceipts[mmyyyy] === undefined) {
                             if (!u.installmentCount || u.installmentCount === 0) {
                                 mInst += u.saleValue;
                             } else {
@@ -3323,6 +3338,349 @@ document.addEventListener('DOMContentLoaded', async () => {
             document.getElementById('modal-import-csv').classList.remove('visible');
             document.getElementById('csv-import-results').style.display = 'none';
             btnApplyCsv.style.display = 'none';
+        });
+    }
+
+    // ─── Planilha Mensal Integration ─────────────────────────────────────────
+    const btnProcessMonthly = document.getElementById('btn-process-monthly');
+    if (btnProcessMonthly) {
+        btnProcessMonthly.addEventListener('click', () => {
+            const fileInput = document.getElementById('monthly-file-input');
+            if (!fileInput.files.length) {
+                alert('Por favor, selecione um arquivo de Planilha Mensal (.xls, .xlsx).');
+                return;
+            }
+            
+            const file = fileInput.files[0];
+            const fileName = file.name.toLowerCase();
+            const btnOriginalText = btnProcessMonthly.innerHTML;
+            btnProcessMonthly.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Processando...';
+            btnProcessMonthly.disabled = true;
+
+            const resetBtn = () => {
+                btnProcessMonthly.innerHTML = btnOriginalText;
+                btnProcessMonthly.disabled = false;
+            };
+
+            if (fileName.endsWith('.xls') || fileName.endsWith('.xlsx')) {
+                if (typeof XLSX === 'undefined') {
+                    alert('Erro: Biblioteca de leitura de Excel não carregada. Recarregue a página.');
+                    resetBtn();
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    try {
+                        const data = new Uint8Array(e.target.result);
+                        const workbook = XLSX.read(data, { type: 'array' });
+                        const firstSheet = workbook.SheetNames[0];
+                        const ws = workbook.Sheets[firstSheet];
+                        // Read as raw array-of-arrays so we control header mapping
+                        const rawRows = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+                        resetBtn();
+                        processMonthlySpreadsheetData(rawRows);
+                    } catch (err) {
+                        alert('Erro ao ler o arquivo Excel: ' + err.message);
+                        resetBtn();
+                    }
+                };
+                reader.onerror = function(err) {
+                    alert('Erro ao abrir o arquivo.');
+                    resetBtn();
+                };
+                reader.readAsArrayBuffer(file);
+            } else {
+                alert('Formato não suportado para Planilha Mensal. Use .xls ou .xlsx');
+                resetBtn();
+            }
+        });
+    }
+
+    let pendingMonthlyRows = [];
+
+    function processMonthlySpreadsheetData(rawRows) {
+        const resultsEl = document.getElementById('monthly-import-results');
+        const btnApply = document.getElementById('btn-apply-monthly');
+        
+        const normalize = (str) => {
+            return String(str || '').toLowerCase()
+                .normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+                .replace(/[^\x20-\x7E]/g, '').trim();
+        };
+
+        if (rawRows.length < 3) {
+            resultsEl.innerHTML = '<div style="color:var(--accent-red);">Planilha vazia ou com poucas linhas.</div>';
+            resultsEl.style.display = 'block';
+            return;
+        }
+
+        // ── Parse the two-row header ──
+        // Row 0 (Excel row 1): month names in certain columns (e.g. E1="Mês de fevereiro de 2026")
+        // Row 1 (Excel row 2): column descriptions (e.g. B2="Endereço do imovel", C2="Nome do locaterio")
+        const headerRow0 = rawRows[0]; // month names
+        const headerRow1 = rawRows[1]; // column descriptions
+
+        console.log('[PLANILHA MENSAL] Row 0 (meses):', headerRow0);
+        console.log('[PLANILHA MENSAL] Row 1 (headers):', headerRow1);
+
+        // Identify column indices by scanning row 1 (descriptions)
+        let colAddress = -1, colTenant = -1, colStatus = -1;
+        let colOpenRent = -1, colOpenSale = -1;
+        
+        for (let i = 0; i < headerRow1.length; i++) {
+            const h = normalize(headerRow1[i]);
+            if (h.includes('endere') || h.includes('imovel')) colAddress = i;
+            if (h.includes('locata') || h.includes('locater') || h.includes('nome do loc')) colTenant = i;
+            if (h === 'locado' || h.includes('locado') || h === 'status' || h.includes('situa')) colStatus = i;
+            if (h.includes('aberto para loca')) colOpenRent = i;
+            if (h.includes('aberto para vend')) colOpenSale = i;
+        }
+
+        console.log('[PLANILHA MENSAL] Colunas detectadas → Endereço:', colAddress, 'Inquilino:', colTenant, 'Status:', colStatus, 'Aberto Locação:', colOpenRent, 'Aberto Venda:', colOpenSale);
+
+        // Identify month columns from Row 0 (month labels like "Mês de fevereiro de 2026")
+        const ptMonths = { 'janeiro':'01', 'jan':'01', 'fevereiro':'02', 'fev':'02', 'marco':'03', 'março':'03', 'mar':'03', 'abril':'04', 'abr':'04', 'maio':'05', 'mai':'05', 'junho':'06', 'jun':'06', 'julho':'07', 'jul':'07', 'agosto':'08', 'ago':'08', 'setembro':'09', 'set':'09', 'outubro':'10', 'out':'10', 'novembro':'11', 'nov':'11', 'dezembro':'12', 'dez':'12' };
+
+        const parseMonthLabel = (label) => {
+            const lc = normalize(label);
+            const yrMatch = lc.match(/20\d{2}/);
+            if (!yrMatch) return null;
+            const yr = yrMatch[0];
+            let mo = null;
+            for (let [k, v] of Object.entries(ptMonths)) {
+                if (lc.includes(k)) { mo = v; break; }
+            }
+            if (!mo) {
+                const mmMatch = lc.match(/(\d{2})\//);
+                if (mmMatch) mo = mmMatch[1];
+            }
+            if (mo && yr) return `${mo}/${yr}`;
+            return null;
+        };
+
+        const monthColMap = []; // { colIndex, mmyyyy }
+        for (let i = 0; i < headerRow0.length; i++) {
+            const cellVal = String(headerRow0[i] || '');
+            if (!cellVal) continue;
+            const parsed = parseMonthLabel(cellVal);
+            if (parsed) {
+                monthColMap.push({ colIndex: i, mmyyyy: parsed, label: cellVal });
+            }
+        }
+
+        console.log('[PLANILHA MENSAL] Meses identificados:', monthColMap.map(m => `Col${m.colIndex}=${m.mmyyyy}`));
+
+        if (monthColMap.length === 0) {
+            resultsEl.innerHTML = '<div style="color:var(--accent-red);">Nenhuma coluna de mês encontrada na linha 1 da planilha. Esperado algo como "Mês de fevereiro de 2026".</div>';
+            resultsEl.style.display = 'block';
+            return;
+        }
+
+        // Build list of all units (include all statuses for matching)
+        const allUnits = [];
+        real_estate.forEach(b => {
+            if (b.id === 'conta_azul_geral') return;
+            (b.units || []).forEach(u => {
+                allUnits.push({ building: b, unit: u });
+            });
+        });
+
+        let matchedCount = 0;
+        let unmatchedCount = 0;
+        let totalReceived = 0;
+        let unmatchedNames = [];
+        pendingMonthlyRows = [];
+
+        // Process data rows (from row index 2 onwards)
+        for (let r = 2; r < rawRows.length; r++) {
+            const row = rawRows[r];
+            if (!row || row.length === 0) continue;
+
+            const address = String(row[colAddress] || '').trim();
+            const tenant = String(row[colTenant] || '').trim();
+            const statusRaw = String(row[colStatus] || '').trim();
+            const openRent = colOpenRent >= 0 ? row[colOpenRent] : '';
+            const openSale = colOpenSale >= 0 ? row[colOpenSale] : '';
+
+            // Skip empty/total rows
+            if (!address && !tenant) continue;
+            const sLower = normalize(statusRaw);
+            if (sLower === 'total') continue;
+
+            // Map status from spreadsheet to system status
+            let mappedStatus = null;
+            if (sLower.includes('alugado')) mappedStatus = 'alugado';
+            else if (sLower.includes('devendo')) mappedStatus = 'alugado'; // devendo = still rented, just late
+            else if (sLower.includes('disponivel') || sLower.includes('disponivel')) mappedStatus = 'disponivel';
+            else if (sLower.includes('preparando')) mappedStatus = 'disponivel';
+            else if (sLower.includes('vender')) mappedStatus = 'disponivel'; // à venda, not yet sold
+            else if (sLower.includes('vendido')) mappedStatus = 'vendido';
+
+            // Try to match with existing units
+            const aLower = normalize(address);
+            const tLower = normalize(tenant);
+
+            const matchingUnits = allUnits.filter(({ building, unit }) => {
+                // Match by tenant name
+                if (tLower && unit.tenantName) {
+                    const existingTenant = normalize(unit.tenantName);
+                    if (existingTenant === tLower) return true;
+                    // Partial match (at least 8 chars)
+                    if (tLower.length >= 8 && existingTenant.includes(tLower.substring(0, 8))) return true;
+                    if (existingTenant.length >= 8 && tLower.includes(existingTenant.substring(0, 8))) return true;
+                }
+                
+                // Match by address / label
+                const bAddr = normalize(building.address || '');
+                const bName = normalize(building.name || '');
+                const uLabel = normalize(unit.label || '');
+                const fullAddr = `${bName} ${bAddr} ${uLabel}`;
+                
+                if (aLower.length > 5 && fullAddr.includes(aLower)) return true;
+                if (aLower.length > 5 && aLower.includes(uLabel) && uLabel.length > 3) return true;
+                
+                // Try matching unit label inside address (e.g. "Odzun ap 14" ↔ "ap 14")
+                if (uLabel.length > 3 && aLower.includes(uLabel)) return true;
+
+                return false;
+            });
+
+            // Extract monthly values
+            const receipts = {};
+            monthColMap.forEach(mc => {
+                const val = row[mc.colIndex];
+                let parsedVal = 0;
+                if (typeof val === 'number') {
+                    parsedVal = val;
+                } else {
+                    const valStr = String(val || '').replace('R$', '').replace(/\s/g, '');
+                    if (valStr) {
+                        if (valStr.includes(',')) parsedVal = parseFloat(valStr.replace(/\./g, '').replace(',', '.'));
+                        else parsedVal = parseFloat(valStr);
+                    }
+                }
+                if (!isNaN(parsedVal) && parsedVal >= 0) {
+                    receipts[mc.mmyyyy] = parsedVal;
+                    totalReceived += parsedVal;
+                }
+            });
+
+            // Parse openRent / openSale values
+            let parsedOpenRent = 0, parsedOpenSale = 0;
+            if (openRent) parsedOpenRent = typeof openRent === 'number' ? openRent : parseFloat(String(openRent).replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+            if (openSale) parsedOpenSale = typeof openSale === 'number' ? openSale : parseFloat(String(openSale).replace(/[^\d.,]/g, '').replace(',', '.')) || 0;
+
+            if (matchingUnits.length > 0) {
+                pendingMonthlyRows.push({
+                    unit: matchingUnits[0].unit,
+                    buildingName: matchingUnits[0].building.name,
+                    address: address,
+                    tenantName: tenant,
+                    newStatus: mappedStatus || matchingUnits[0].unit.status,
+                    statusLabel: statusRaw,
+                    receipts: receipts,
+                    openRent: parsedOpenRent,
+                    openSale: parsedOpenSale
+                });
+                matchedCount++;
+            } else {
+                // Not matched — still store for display
+                pendingMonthlyRows.push({
+                    unit: null,
+                    buildingName: null,
+                    address: address,
+                    tenantName: tenant,
+                    newStatus: mappedStatus,
+                    statusLabel: statusRaw,
+                    receipts: receipts,
+                    openRent: parsedOpenRent,
+                    openSale: parsedOpenSale
+                });
+                unmatchedCount++;
+                unmatchedNames.push(`${address} (${tenant || statusRaw})`);
+            }
+        }
+
+        // Render results
+        const fmt = (v) => new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' }).format(v);
+        
+        if (matchedCount > 0 || unmatchedCount > 0) {
+            resultsEl.style.display = 'block';
+            let html = '';
+
+            if (matchedCount > 0) {
+                html += `
+                    <div style="color: var(--accent-green); margin-bottom: 8px;">
+                        <i class="fa-solid fa-circle-check"></i> <strong>${matchedCount} imóveis vinculados automaticamente</strong>
+                    </div>
+                    <div style="font-size: 11px; color: var(--text-secondary); margin-bottom: 12px;">
+                        Meses identificados: ${monthColMap.map(c => c.mmyyyy).join(', ')}<br>
+                        Total financeiro lido: ${fmt(totalReceived)}
+                    </div>
+                    <ul style="padding-left: 20px; margin-bottom: 12px; color: var(--text-secondary); max-height: 160px; overflow-y: auto; font-size: 12px;">
+                        ${pendingMonthlyRows.filter(r => r.unit).map(r => {
+                            const receiptSummary = Object.entries(r.receipts).map(([m, v]) => `${m}: ${fmt(v)}`).join(' | ');
+                            return `<li style="margin-bottom: 4px;">
+                                <strong>${r.address}</strong> → ${r.tenantName || '(sem inquilino)'} 
+                                <span style="color: var(--accent-green);"><i class="fa-solid fa-link"></i></span>
+                                <div style="font-size: 10px; color: var(--text-secondary);">${receiptSummary}</div>
+                            </li>`;
+                        }).join('')}
+                    </ul>
+                `;
+            }
+
+            if (unmatchedCount > 0) {
+                html += `
+                    <div style="padding: 8px; background: rgba(255, 160, 0, 0.1); border-left: 3px solid var(--accent-gold); border-radius: 4px; margin-bottom: 12px;">
+                        <div style="font-size: 11px; color: var(--accent-gold); margin-bottom: 6px;">
+                            <i class="fa-solid fa-triangle-exclamation"></i> <strong>${unmatchedCount} imóveis sem vínculo</strong> (serão criados como novos)
+                        </div>
+                        <div style="max-height: 100px; overflow-y: auto; font-size: 11px; color: var(--text-secondary);">
+                            ${unmatchedNames.map(n => `<div>• ${n}</div>`).join('')}
+                        </div>
+                    </div>
+                `;
+            }
+
+            resultsEl.innerHTML = html;
+            btnApply.style.display = 'block';
+        } else {
+            resultsEl.style.display = 'block';
+            resultsEl.innerHTML = `<div style="color: var(--accent-red);"><i class="fa-solid fa-circle-xmark"></i> Nenhum dado válido encontrado na planilha.</div>`;
+            btnApply.style.display = 'none';
+        }
+    }
+
+    const btnApplyMonthly = document.getElementById('btn-apply-monthly');
+    if (btnApplyMonthly) {
+        btnApplyMonthly.addEventListener('click', () => {
+            let unitsUpdated = 0;
+            pendingMonthlyRows.forEach(data => {
+                if (!data.unit) return; // skip unmatched rows
+                
+                const u = data.unit;
+                if (data.newStatus) u.status = data.newStatus;
+                if (data.tenantName) u.tenantName = data.tenantName;
+                if (!u.monthlyReceipts) u.monthlyReceipts = {};
+                
+                for (let [mmyyyy, val] of Object.entries(data.receipts)) {
+                    u.monthlyReceipts[mmyyyy] = val;
+                }
+                unitsUpdated++;
+            });
+
+            saveRealEstate();
+            updateRealEstateUI();
+            if (typeof renderRentalIncomeChart === 'function') renderRentalIncomeChart();
+
+            const unmatchedTotal = pendingMonthlyRows.filter(r => !r.unit).length;
+            let msg = `${unitsUpdated} unidades foram atualizadas com o histórico mensal!`;
+            if (unmatchedTotal > 0) msg += `\n\n${unmatchedTotal} imóveis não foram vinculados (não existem no sistema ainda).`;
+            alert(msg);
+            document.getElementById('modal-import-monthly').classList.remove('visible');
+            document.getElementById('monthly-import-results').style.display = 'none';
+            btnApplyMonthly.style.display = 'none';
         });
     }
 
