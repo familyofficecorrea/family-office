@@ -410,8 +410,14 @@ function getOccupancyInfo(building) {
         }
     });
 
+    const contractGroupsCounted = new Set();
     const totalRent = units.filter(u => u.status === 'alugado' || u.status === 'inadimplente').reduce((s, u) => {
         if (u.rentStartDate && u.rentStartDate > todayStr) return s;
+        
+        if (u.contractGroup) {
+            if (contractGroupsCounted.has(u.contractGroup)) return s;
+            contractGroupsCounted.add(u.contractGroup);
+        }
         
         if (latestMonthKey && u.monthlyReceipts && u.monthlyReceipts[latestMonthKey] !== undefined) {
             return s + u.monthlyReceipts[latestMonthKey];
@@ -1841,6 +1847,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         document.getElementById('edit-unit-id').value = unitId;
         document.getElementById('edit-unit-label').value = unit.label;
         document.getElementById('edit-unit-tenant').value = unit.tenantName || '';
+        document.getElementById('edit-unit-contract-group').value = unit.contractGroup || '';
         document.getElementById('edit-unit-status').value = unit.status;
         document.getElementById('edit-unit-rent').value = unit.rentValue || '';
         document.getElementById('edit-unit-rent-start').value = unit.rentStartDate || '';
@@ -1893,6 +1900,8 @@ document.addEventListener('DOMContentLoaded', async () => {
         const status = unit.status;
         document.getElementById('edit-unit-rent-group').style.display = (status === 'alugado') ? 'block' : 'none';
         document.getElementById('edit-unit-rent-start-group').style.display = (status === 'alugado') ? 'block' : 'none';
+        const contractGroupDiv = document.getElementById('edit-unit-contract-group-div');
+        if (contractGroupDiv) contractGroupDiv.style.display = (status === 'alugado') ? 'block' : 'none';
         document.getElementById('edit-unit-expenses-group').style.display = (status === 'alugado' || status === 'disponivel') ? 'block' : 'none';
         document.getElementById('edit-unit-contract-group').style.display = (status === 'alugado') ? 'block' : 'none';
         document.getElementById('edit-unit-sale-group').style.display = (status === 'vendido') ? 'block' : 'none';
@@ -2048,7 +2057,10 @@ document.addEventListener('DOMContentLoaded', async () => {
                     </button>
                     <div class="unit-card-header">
                         <span class="unit-card-label">${u.label}</span>
-                        <span class="unit-status-badge ${u.status}">${statusLabel}</span>
+                        <div style="display: flex; gap: 4px; align-items: center;">
+                            <span class="unit-status-badge ${u.status}">${statusLabel}</span>
+                            ${u.contractGroup ? `<span style="font-size: 10px; color: var(--accent-blue); background: rgba(41,98,255,0.1); padding: 2px 6px; border-radius: 4px;" title="Contrato compartilhado"><i class="fa-solid fa-link"></i> ${u.contractGroup}</span>` : ''}
+                        </div>
                     </div>
                     ${valueHtml}
                     <div class="unit-card-tenant" style="font-size: 0.8rem; color: var(--text-secondary); margin-top: 8px;">
@@ -2830,6 +2842,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
             unit.label = document.getElementById('edit-unit-label').value.trim();
             unit.tenantName = document.getElementById('edit-unit-tenant').value.trim();
+            unit.contractGroup = document.getElementById('edit-unit-contract-group').value.trim();
             unit.status = document.getElementById('edit-unit-status').value;
             unit.rentValue = parseFloat(document.getElementById('edit-unit-rent').value) || 0;
             unit.rentStartDate = document.getElementById('edit-unit-rent-start').value || '';

@@ -709,6 +709,11 @@
                     <label>Inquilino / Cliente (Conta Azul)</label>
                     <input type="text" id="edit-unit-tenant" placeholder="Ex: Gizele Bermudes">
                 </div>
+                <div class="input-group" id="edit-unit-contract-group-div" style="display: none;">
+                    <label>Grupo de Contrato (Opcional)</label>
+                    <input type="text" id="edit-unit-contract-group" placeholder="Ex: Contrato Salas 101/102">
+                    <small style="color: var(--text-secondary); font-size: 11px;">Unidades com o mesmo grupo somarão o aluguel apenas uma vez.</small>
+                </div>
                 <div class="input-group">
                     <label>Status</label>
                     <select id="edit-unit-status" class="premium-select" required>
@@ -1216,6 +1221,7 @@
             const contractGroup = document.getElementById('edit-unit-contract-group');
             const netYieldPreview = document.getElementById('edit-unit-netyield-preview');
             const tenantGroup = document.getElementById('edit-unit-tenant-group');
+            const contractGroupDiv = document.getElementById('edit-unit-contract-group-div');
             const saleGroup = document.getElementById('edit-unit-sale-group');
             const saleDateGroup = document.getElementById('edit-unit-sale-date-group');
             const downpaymentGroup = document.getElementById('edit-unit-downpayment-group');
@@ -1231,6 +1237,7 @@
                 contractGroup.style.display = 'block';
                 netYieldPreview.style.display = 'block';
                 tenantGroup.style.display = 'block';
+                if (contractGroupDiv) contractGroupDiv.style.display = 'block';
                 saleGroup.style.display = 'none';
                 saleDateGroup.style.display = 'none';
                 downpaymentGroup.style.display = 'none';
@@ -1246,6 +1253,7 @@
                 contractGroup.style.display = 'none';
                 netYieldPreview.style.display = 'none';
                 tenantGroup.style.display = 'block';
+                if (contractGroupDiv) contractGroupDiv.style.display = 'none';
                 saleGroup.style.display = 'block';
                 saleDateGroup.style.display = 'block';
                 downpaymentGroup.style.display = 'block';
@@ -1260,6 +1268,7 @@
                 contractGroup.style.display = 'none';
                 netYieldPreview.style.display = 'none';
                 tenantGroup.style.display = 'none';
+                if (contractGroupDiv) contractGroupDiv.style.display = 'none';
                 saleGroup.style.display = 'none';
                 saleDateGroup.style.display = 'none';
                 downpaymentGroup.style.display = 'none';
