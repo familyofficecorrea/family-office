@@ -393,8 +393,29 @@ function getOccupancyInfo(building) {
     const occupied = rented;
     const pct = total > 0 ? Math.round((occupied / total) * 100) : 0;
     const todayStr = new Date().toISOString().split('T')[0];
+    let latestMonthKey = null;
+    let latestMonthDate = null;
+    
+    units.forEach(u => {
+        if (u.monthlyReceipts) {
+            Object.keys(u.monthlyReceipts).forEach(mmyyyy => {
+                const [mm, yyyy] = mmyyyy.split('/');
+                const d = new Date(parseInt(yyyy), parseInt(mm) - 1, 1);
+                if (!latestMonthDate || d > latestMonthDate) {
+                    latestMonthDate = d;
+                    latestMonthKey = mmyyyy;
+                }
+            });
+        }
+    });
+
     const totalRent = units.filter(u => u.status === 'alugado').reduce((s, u) => {
         if (u.rentStartDate && u.rentStartDate > todayStr) return s;
+        
+        if (latestMonthKey && u.monthlyReceipts && u.monthlyReceipts[latestMonthKey] !== undefined) {
+            return s + u.monthlyReceipts[latestMonthKey];
+        }
+        
         return s + getEffectiveRent(u);
     }, 0);
     const totalSales = units.filter(u => u.status === 'vendido').reduce((s, u) => s + (u.saleValue || 0), 0);
