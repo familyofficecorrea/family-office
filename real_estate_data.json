@@ -1,357 +1,1408 @@
 [
   {
-    "address": "Rua Principal, 500",
-    "id": 1776877489359,
-    "name": "Prédio Odzun",
-    "totalUnits": 38,
+    "id": 1,
+    "name": "Rua João Batista Morato do Canto",
+    "address": "Rua João Batista Morato do Canto 1695 Campinas",
+    "totalUnits": 1,
     "units": [
       {
         "id": 1,
-        "label": "Apt 11",
-        "notes": "Contrato até 12/2026",
-        "rentValue": 1200,
-        "saleValue": 0,
+        "label": "Rua João Batista Morato do Canto 1695 Campinas",
         "status": "alugado",
-        "rentStartDate": "2025-01-01",
-        "saleDate": ""
-      },
-      {
-        "id": 2,
-        "label": "Apt 2",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 180000,
-        "status": "vendido"
-      },
-      {
-        "id": 3,
-        "label": "Apt 31",
-        "notes": "Contrato até 12/2026",
-        "rentValue": 2200,
+        "rentValue": 80148.24,
         "saleValue": 0,
-        "status": "alugado",
-        "rentStartDate": "2026-01-01",
-        "saleDate": ""
-      },
-      {
-        "id": 4,
-        "label": "Apt 4",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 5,
-        "label": "Apt 5",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 6,
-        "label": "Apt 6",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 7,
-        "label": "Apt 7",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 8,
-        "label": "Apt 8",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 9,
-        "label": "Apt 9",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 10,
-        "label": "Apt 10",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 11,
-        "label": "Apt 11",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 12,
-        "label": "Apt 12",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 13,
-        "label": "Apt 13",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 14,
-        "label": "Apt 14",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 15,
-        "label": "Apt 15",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 16,
-        "label": "Apt 16",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 17,
-        "label": "Apt 17",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 18,
-        "label": "Apt 18",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 19,
-        "label": "Apt 19",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 20,
-        "label": "Apt 20",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 21,
-        "label": "Apt 21",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 22,
-        "label": "Apt 22",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 23,
-        "label": "Apt 23",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 24,
-        "label": "Apt 24",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 25,
-        "label": "Apt 25",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 26,
-        "label": "Apt 26",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 27,
-        "label": "Apt 27",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 28,
-        "label": "Apt 28",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 29,
-        "label": "Apt 29",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 30,
-        "label": "Apt 30",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 31,
-        "label": "Apt 31",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 32,
-        "label": "Apt 32",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 33,
-        "label": "Apt 33",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 34,
-        "label": "Apt 83",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 317000,
-        "status": "vendido"
-      },
-      {
-        "id": 35,
-        "label": "Apt 35",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 36,
-        "label": "Apt 36",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 37,
-        "label": "Apt 37",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
-      },
-      {
-        "id": 38,
-        "label": "Apt 38",
-        "notes": "",
-        "rentValue": 0,
-        "saleValue": 0,
-        "status": "disponivel"
+        "tenantName": "Rede Decisão Unidade",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 80148.24,
+          "03/2026": 80148.34,
+          "04/2026": 80148.24
+        },
+        "rentStartDate": "2026-02-01"
       }
     ]
   },
   {
-    "address": "",
-    "id": 1776877765357,
-    "name": "Galpao Lauro Vanucci",
+    "id": 2,
+    "name": "Rua Alfredo da Costa Figo - Campinas",
+    "address": "Rua Alfredo da Costa Figo 41 Campinas",
+    "totalUnits": 5,
+    "units": [
+      {
+        "id": 1,
+        "label": "Rua Alfredo da Costa Figo 41 Campinas",
+        "status": "alugado",
+        "rentValue": 14776.14,
+        "saleValue": 0,
+        "tenantName": "Time Energy /  DMA",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 14776.14,
+          "03/2026": 14776.14,
+          "04/2026": 14776.14
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 2,
+        "label": "Rua Alfredo da Costa Figo 95 Campinas",
+        "status": "alugado",
+        "rentValue": 25000,
+        "saleValue": 0,
+        "tenantName": "Time Energy /  DMA",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 25000,
+          "03/2026": 25000,
+          "04/2026": 25000
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 3,
+        "label": "Rua Alfredo da Costa Figo 105 Campinas",
+        "status": "alugado",
+        "rentValue": 24000,
+        "saleValue": 0,
+        "tenantName": "Gisele Bermudes",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 24000,
+          "03/2026": 24000,
+          "04/2026": 24000
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 4,
+        "label": "Rua Alfredo da Costa Figo 115 Campinas",
+        "status": "alugado",
+        "rentValue": 27964.33,
+        "saleValue": 0,
+        "tenantName": "Via Mundial",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 26495.91,
+          "03/2026": 26495.91,
+          "04/2026": 27964.33
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 5,
+        "label": "Rua Alfredo da Costa Figo 123 CampInas",
+        "status": "alugado",
+        "rentValue": 27446.16,
+        "saleValue": 0,
+        "tenantName": "Prefeitura de Campinas",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 27446.16,
+          "03/2026": 27446.16,
+          "04/2026": 27446.16
+        },
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 3,
+    "name": "Rua Lauro Vannucci - Campinas",
+    "address": "Rua Lauro Vannucci 98 Campinas",
+    "totalUnits": 3,
+    "units": [
+      {
+        "id": 1,
+        "label": "Rua Lauro Vannucci 98 Campinas",
+        "status": "alugado",
+        "rentValue": 17216.87,
+        "saleValue": 0,
+        "tenantName": "Thiago Henrique Rodrigues",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 17216.87,
+          "03/2026": 17216.17,
+          "04/2026": 17216.87
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 2,
+        "label": "Rua Lauro Vannucci 108 Campinas",
+        "status": "alugado",
+        "rentValue": 16504.18,
+        "saleValue": 0,
+        "tenantName": "Malbec VD Produtos",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 16504.18,
+          "03/2026": 16504.18,
+          "04/2026": 16504.18
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 3,
+        "label": "Rua Lauro Vannucci 118 Campinas",
+        "status": "alugado",
+        "rentValue": 18652.89,
+        "saleValue": 0,
+        "tenantName": "Glaucia Kely Benatti",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 18652.89,
+          "03/2026": 18652.89,
+          "04/2026": 18652.89
+        },
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 4,
+    "name": "Rua Eng. Pedro Garcin 195",
+    "address": "Rua Eng. Pedro Garcin 195 casa 1",
+    "totalUnits": 5,
+    "units": [
+      {
+        "id": 1,
+        "label": "casa 1",
+        "status": "alugado",
+        "rentValue": 1499.13,
+        "saleValue": 0,
+        "tenantName": "Pamela Nunes da Silva",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1499.13,
+          "03/2026": 1499.13,
+          "04/2026": 1499.13
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 2,
+        "label": "casa 2",
+        "status": "alugado",
+        "rentValue": 24,
+        "saleValue": 0,
+        "tenantName": "Paloma Mota Da Silva",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 0,
+          "03/2026": 0,
+          "04/2026": 24
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 3,
+        "label": "casa 3",
+        "status": "alugado",
+        "rentValue": 1594.88,
+        "saleValue": 0,
+        "tenantName": "Vivaldo Aeko Omosako",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1424.92,
+          "03/2026": 1594.88,
+          "04/2026": 1594.88
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 4,
+        "label": "casa 4",
+        "status": "alugado",
+        "rentValue": 1514.18,
+        "saleValue": 0,
+        "tenantName": "Yasmin Victoria Fonseca",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 0,
+          "03/2026": 18.61,
+          "04/2026": 1514.18
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 5,
+        "label": "Galpão",
+        "status": "alugado",
+        "rentValue": 6481.43,
+        "saleValue": 0,
+        "tenantName": "Evandro Leal Nunes",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 5373.76,
+          "03/2026": 6481.43,
+          "04/2026": 6481.43
+        },
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 5,
+    "name": "Av. Corifeu de Azevedo Marques",
+    "address": "Av. Corifeu de Azevedo Marques 4.950 - Posto loja 1",
+    "totalUnits": 1,
+    "units": [
+      {
+        "id": 1,
+        "label": "loja 1",
+        "status": "alugado",
+        "rentValue": 0,
+        "saleValue": 0,
+        "tenantName": "São Francisco Fitness ltda",
+        "notes": "Status original: Devendo",
+        "monthlyReceipts": {
+          "02/2026": 0,
+          "03/2026": 0,
+          "04/2026": 0
+        },
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 6,
+    "name": "Av. Nações Unidas 14401 - Pq Cidade",
+    "address": "Av. das Nações Unidas 14401 Pq Cidade sala 3010/11",
     "totalUnits": 4,
     "units": [
       {
         "id": 1,
-        "label": "Galpao 1",
-        "notes": "",
-        "rentValue": 0,
+        "label": "sala 3010/11",
+        "status": "alugado",
+        "rentValue": 12390.6,
         "saleValue": 0,
-        "status": "disponivel"
+        "tenantName": "Nankran Mourão",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 10542.74,
+          "03/2026": 12328.09,
+          "04/2026": 12390.6
+        },
+        "rentStartDate": "2026-02-01"
       },
       {
         "id": 2,
-        "label": "Galpao 2",
-        "notes": "",
-        "rentValue": 0,
+        "label": "sala 3012/13",
+        "status": "alugado",
+        "rentValue": 16209.43,
         "saleValue": 0,
-        "status": "disponivel"
+        "tenantName": "Shalon Gestão de Cobrança",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 14334.65,
+          "03/2026": 16144.91,
+          "04/2026": 16209.43
+        },
+        "rentStartDate": "2026-02-01"
       },
       {
         "id": 3,
-        "label": "Galpao 3",
-        "notes": "",
-        "rentValue": 0,
+        "label": "sala 3014/15/16",
+        "status": "alugado",
+        "rentValue": 18748.57,
         "saleValue": 0,
-        "status": "disponivel"
+        "tenantName": "Zoox Soluções em Midia",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 15949.86,
+          "03/2026": 18652.79,
+          "04/2026": 18748.57
+        },
+        "rentStartDate": "2026-02-01"
       },
       {
         "id": 4,
-        "label": "Galpao 4",
-        "notes": "",
+        "label": "sala 3017",
+        "status": "alugado",
+        "rentValue": 5200.32,
+        "saleValue": 0,
+        "tenantName": "Helen Naves Sociedade de Advogados",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 4290.22,
+          "03/2026": 5196.83,
+          "04/2026": 5200.32
+        },
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 7,
+    "name": "Av. Dr. Vital Brasil 305",
+    "address": "Av. Dr. Vital Brasil 305 sala 505",
+    "totalUnits": 2,
+    "units": [
+      {
+        "id": 1,
+        "label": "sala 505",
+        "status": "alugado",
+        "rentValue": 3256.38,
+        "saleValue": 0,
+        "tenantName": "Serviço Integrado de Fisioterapia",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 2931,
+          "03/2026": 3256.98,
+          "04/2026": 3256.38
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 2,
+        "label": "sala 506",
+        "status": "disponivel",
+        "rentValue": 2800.0,
+        "saleValue": 0,
+        "tenantName": "",
+        "notes": "Pedir R$ 2,800.00/mês. Mudar valor R$3900 (aluguel + iptu)",
+        "monthlyReceipts": {
+          "02/2026": 3457.91,
+          "03/2026": 3457.91,
+          "04/2026": 0
+        },
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 8,
+    "name": "Av. João Jose Gomes 140",
+    "address": "Av. Joao Jose Gomes 140 Galpão",
+    "totalUnits": 7,
+    "units": [
+      {
+        "id": 1,
+        "label": "Galpão",
+        "status": "alugado",
+        "rentValue": 9999.77,
+        "saleValue": 0,
+        "tenantName": "Potiguar Comercio de Flores",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 8786.08,
+          "03/2026": 9999.77,
+          "04/2026": 9999.77
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 2,
+        "label": "casa 1",
+        "status": "alugado",
+        "rentValue": 1573.33,
+        "saleValue": 0,
+        "tenantName": "Barbara Christina Peleg.",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1573.33,
+          "03/2026": 1573.33,
+          "04/2026": 1573.33
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 3,
+        "label": "casa 2",
+        "status": "alugado",
+        "rentValue": 1748,
+        "saleValue": 0,
+        "tenantName": "Fabiana Meira Fernandes",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 22.23,
+          "03/2026": 524.64,
+          "04/2026": 1748
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 4,
+        "label": "casa 3",
+        "status": "alugado",
+        "rentValue": 1802.56,
+        "saleValue": 0,
+        "tenantName": "Eder Dias Duarte",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1802.56,
+          "03/2026": 1802.56,
+          "04/2026": 1802.56
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 5,
+        "label": "casa 4",
+        "status": "alugado",
+        "rentValue": 1518,
+        "saleValue": 0,
+        "tenantName": "João Paulo Graciano Silva",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1518,
+          "03/2026": 1518,
+          "04/2026": 1518
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 6,
+        "label": "casa 5",
+        "status": "alugado",
+        "rentValue": 1560.86,
+        "saleValue": 0,
+        "tenantName": "Adolfo Heubel",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1560.86,
+          "03/2026": 1560.86,
+          "04/2026": 1560.86
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 7,
+        "label": "casa 6",
+        "status": "alugado",
+        "rentValue": 1702,
+        "saleValue": 0,
+        "tenantName": "Newton Rodrigo Simoes",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 20.26,
+          "03/2026": 785.36,
+          "04/2026": 1702
+        },
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 9,
+    "name": "Rua Eng. Pedro Garcin 170",
+    "address": "Rua Eng. Pedro Garcin 170 A",
+    "totalUnits": 2,
+    "units": [
+      {
+        "id": 1,
+        "label": "Rua Eng. Pedro Garcin 170 A",
+        "status": "alugado",
+        "rentValue": 17798.5,
+        "saleValue": 0,
+        "tenantName": "Elite Superficie",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 17798.5,
+          "03/2026": 17798.5,
+          "04/2026": 17798.5
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 2,
+        "label": "Rua Eng. Pedro Garcin 170 B",
+        "status": "alugado",
+        "rentValue": 35082.18,
+        "saleValue": 0,
+        "tenantName": "Gilson dos Santos",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 24715.51,
+          "03/2026": 29143.01,
+          "04/2026": 35082.18
+        },
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 10,
+    "name": "EPG - Eng. Pedro Garcin (Kitnet)",
+    "address": "EPG 01",
+    "totalUnits": 20,
+    "units": [
+      {
+        "id": 1,
+        "label": "EPG 01",
+        "status": "alugado",
         "rentValue": 0,
         "saleValue": 0,
-        "status": "disponivel"
+        "tenantName": "David Nascimento Dos Santos",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 0,
+          "03/2026": 0,
+          "04/2026": 0
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 2,
+        "label": "EPG 02",
+        "status": "alugado",
+        "rentValue": 21.6,
+        "saleValue": 0,
+        "tenantName": "Layanne Medeiros",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 0,
+          "03/2026": 0,
+          "04/2026": 21.6
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 3,
+        "label": "EPG 03",
+        "status": "alugado",
+        "rentValue": 1380,
+        "saleValue": 0,
+        "tenantName": "Natalia Tozzo Seixeiro",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1380,
+          "03/2026": 1380,
+          "04/2026": 1380
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 4,
+        "label": "EPG 04",
+        "status": "alugado",
+        "rentValue": 1288,
+        "saleValue": 0,
+        "tenantName": "Altenize Luciana Aparecida",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1288,
+          "03/2026": 1288,
+          "04/2026": 1288
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 5,
+        "label": "EPG 05",
+        "status": "alugado",
+        "rentValue": 1323.69,
+        "saleValue": 0,
+        "tenantName": "Luciano Rodrigues de S.",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1269.6,
+          "03/2026": 1292.8,
+          "04/2026": 1323.69
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 6,
+        "label": "EPG 06",
+        "status": "alugado",
+        "rentValue": 1240.09,
+        "saleValue": 0,
+        "tenantName": "Rodrigo Vizeu da Silva",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1240.09,
+          "03/2026": 1240.09,
+          "04/2026": 1240.09
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 7,
+        "label": "EPG 07",
+        "status": "alugado",
+        "rentValue": 1193,
+        "saleValue": 0,
+        "tenantName": "Eduardo Ferreira ( Bray)",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1193,
+          "03/2026": 1193,
+          "04/2026": 1193
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 8,
+        "label": "EPG 08",
+        "status": "alugado",
+        "rentValue": 1117.83,
+        "saleValue": 0,
+        "tenantName": "",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 0,
+          "03/2026": 1117.83
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 9,
+        "label": "EPG 09",
+        "status": "alugado",
+        "rentValue": 1416.8,
+        "saleValue": 0,
+        "tenantName": "Fatima Aparecida Queir.",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 151.01,
+          "03/2026": 1416.8,
+          "04/2026": 1416.8
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 10,
+        "label": "EPG 10",
+        "status": "alugado",
+        "rentValue": 1196,
+        "saleValue": 0,
+        "tenantName": "Frederico Carvalho De M.",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1196,
+          "03/2026": 1196,
+          "04/2026": 1196
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 11,
+        "label": "EPG 11",
+        "status": "alugado",
+        "rentValue": 1361.6,
+        "saleValue": 0,
+        "tenantName": "Milton Virgulino Dos Santos",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1347.28,
+          "03/2026": 1361.6,
+          "04/2026": 1361.6
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 12,
+        "label": "EPG 12",
+        "status": "alugado",
+        "rentValue": 1039,
+        "saleValue": 0,
+        "tenantName": "Romulo Dias Pires",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1460.44,
+          "03/2026": 1460.44,
+          "04/2026": 1039
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 13,
+        "label": "EPG 13",
+        "status": "alugado",
+        "rentValue": 1488,
+        "saleValue": 0,
+        "tenantName": "Luiz Eduardo Ariga",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1488,
+          "03/2026": 1488,
+          "04/2026": 1488
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 14,
+        "label": "EPG 14",
+        "status": "alugado",
+        "rentValue": 1439.6,
+        "saleValue": 0,
+        "tenantName": "Bruna Nascimento Mira.",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1439.6,
+          "03/2026": 1439.6,
+          "04/2026": 1439.6
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 15,
+        "label": "EPG 15",
+        "status": "alugado",
+        "rentValue": 1291.92,
+        "saleValue": 0,
+        "tenantName": "Thiago Martins Moura",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1291.92,
+          "03/2026": 1291.92,
+          "04/2026": 1291.92
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 16,
+        "label": "EPG 16",
+        "status": "alugado",
+        "rentValue": 1388,
+        "saleValue": 0,
+        "tenantName": "Nixon Junior Cazuza Do.",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1288,
+          "03/2026": 1288,
+          "04/2026": 1388
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 17,
+        "label": "EPG 17",
+        "status": "alugado",
+        "rentValue": 1288,
+        "saleValue": 0,
+        "tenantName": "Alexandre de Almeida R.",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1488,
+          "03/2026": 1368,
+          "04/2026": 1288
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 18,
+        "label": "EPG 18",
+        "status": "alugado",
+        "rentValue": 82.28,
+        "saleValue": 0,
+        "tenantName": "Mariele aparecida Dos",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1400,
+          "03/2026": 1048.05,
+          "04/2026": 82.28
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 19,
+        "label": "EPG 20",
+        "status": "alugado",
+        "rentValue": 1288,
+        "saleValue": 0,
+        "tenantName": "Pedro Dutra Cardoso",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 1288,
+          "03/2026": 1288,
+          "04/2026": 1288
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 20,
+        "label": "EPG 22",
+        "status": "alugado",
+        "rentValue": 272,
+        "saleValue": 0,
+        "tenantName": "Vinicius Kalil Venceslau",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 0,
+          "03/2026": 0,
+          "04/2026": 272
+        },
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 11,
+    "name": "Av. Presidente Altino 1619",
+    "address": "Av. Presidente Altino 1619 ap 11 Bl 2",
+    "totalUnits": 1,
+    "units": [
+      {
+        "id": 1,
+        "label": "ap 11",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 670000.0,
+        "tenantName": "",
+        "notes": "À venda por R$ 670,000.00.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 12,
+    "name": "Prédio Odzun",
+    "address": "Odzun ap 01 com vaga ( garden)",
+    "totalUnits": 38,
+    "units": [
+      {
+        "id": 1,
+        "label": "ap 01 com vaga ( garden)",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 446567.49,
+        "tenantName": "",
+        "notes": "À venda por R$ 446,567.49.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 2,
+        "label": "ap 02 com vaga ( garden)",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 440101.79,
+        "tenantName": "",
+        "notes": "À venda por R$ 440,101.79.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 3,
+        "label": "ap 11 sem vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 345907.37,
+        "tenantName": "",
+        "notes": "À venda por R$ 345,907.37.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 4,
+        "label": "ap 12 sem vaga / decorado",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 358907.37,
+        "tenantName": "",
+        "notes": "À venda por R$ 358,907.37.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 5,
+        "label": "ap 13 sem vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 345907.37,
+        "tenantName": "",
+        "notes": "À venda por R$ 345,907.37.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 6,
+        "label": "ap 14 sem vaga",
+        "status": "alugado",
+        "rentValue": 2024,
+        "saleValue": 0,
+        "tenantName": "Douglas Barbosa de Cu.",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 2024,
+          "03/2026": 2024,
+          "04/2026": 2024
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 7,
+        "label": "ap 21 com vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 365108.69,
+        "tenantName": "",
+        "notes": "À venda por R$ 365,108.69.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 8,
+        "label": "ap 22 sem vaga",
+        "status": "vendido",
+        "rentValue": 0,
+        "saleValue": 0,
+        "tenantName": "",
+        "notes": "Status original: Vendido",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 9,
+        "label": "ap 23 com vaga",
+        "status": "alugado",
+        "rentValue": 2302.44,
+        "saleValue": 0,
+        "tenantName": "Jonathan Felipe da Silva",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 2254,
+          "03/2026": 2254,
+          "04/2026": 2302.44
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 10,
+        "label": "ap 24 sem vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 347137.37,
+        "tenantName": "",
+        "notes": "À venda por R$ 347,137.37.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 11,
+        "label": "ap 31 com vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 365928.69,
+        "tenantName": "",
+        "notes": "À venda por R$ 365,928.69.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 12,
+        "label": "ap 32 sem vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 348982.37,
+        "tenantName": "",
+        "notes": "À venda por R$ 348,982.37.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 13,
+        "label": "pa 33 sem vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 348982.37,
+        "tenantName": "",
+        "notes": "À venda por R$ 348,982.37.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 14,
+        "label": "ap 34 sem vaga",
+        "status": "alugado",
+        "rentValue": 2116,
+        "saleValue": 0,
+        "tenantName": "Artur Nava Bueno da Sil.",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 2116,
+          "03/2026": 2116,
+          "04/2026": 2116
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 15,
+        "label": "ap 41 com vaga",
+        "status": "vendido",
+        "rentValue": 0,
+        "saleValue": 0,
+        "tenantName": "",
+        "notes": "Status original: Vendido",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 16,
+        "label": "ap 42 sem vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 351032.37,
+        "tenantName": "",
+        "notes": "À venda por R$ 351,032.37.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 17,
+        "label": "ap 43 sem vaga",
+        "status": "alugado",
+        "rentValue": 2300,
+        "saleValue": 0,
+        "tenantName": "Aegla da Silva Barros",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 2300,
+          "03/2026": 2300,
+          "04/2026": 2300
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 18,
+        "label": "ap 44 sem vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 351032.37,
+        "tenantName": "",
+        "notes": "À venda por R$ 351,032.37.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 19,
+        "label": "ap 51 com vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 370028.69,
+        "tenantName": "",
+        "notes": "À venda por R$ 370,028.69.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 20,
+        "label": "ap 52 com vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 370028.69,
+        "tenantName": "",
+        "notes": "À venda por R$ 370,028.69.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 21,
+        "label": "ap 53 sem vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 352057.37,
+        "tenantName": "",
+        "notes": "À venda por R$ 352,057.37.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 22,
+        "label": "ap 54 sem vaga",
+        "status": "alugado",
+        "rentValue": 178.16,
+        "saleValue": 0,
+        "tenantName": "Sandra Rufino Aguiar",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 0,
+          "03/2026": 0,
+          "04/2026": 178.16
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 23,
+        "label": "ap 61 com vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 372078.69,
+        "tenantName": "",
+        "notes": "À venda por R$ 372,078.69.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 24,
+        "label": "ap 62 com vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 372078.69,
+        "tenantName": "",
+        "notes": "À venda por R$ 372,078.69.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 25,
+        "label": "ap 63 sem vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 354107.37,
+        "tenantName": "",
+        "notes": "À venda por R$ 354,107.37.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 26,
+        "label": "ap 64 sem vaga",
+        "status": "disponivel",
+        "rentValue": 2300.0,
+        "saleValue": 0,
+        "tenantName": "",
+        "notes": "Pedir R$ 2,300.00/mês. Status original: disponivel",
+        "monthlyReceipts": {
+          "02/2026": 0,
+          "03/2026": 0
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 27,
+        "label": "ap 71 com vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 376178.96,
+        "tenantName": "",
+        "notes": "À venda por R$ 376,178.96.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 28,
+        "label": "ap 72 com vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 376178.96,
+        "tenantName": "",
+        "notes": "À venda por R$ 376,178.96.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 29,
+        "label": "ap 73 sem vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 356157.37,
+        "tenantName": "",
+        "notes": "À venda por R$ 356,157.37.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 30,
+        "label": "ap 74 com vaga",
+        "status": "alugado",
+        "rentValue": 2352.09,
+        "saleValue": 0,
+        "tenantName": "Luisa Garcia Bertati Ferr.",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 2352.09,
+          "03/2026": 2342.09,
+          "04/2026": 2352.09
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 31,
+        "label": "ap 81 com vaga",
+        "status": "alugado",
+        "rentValue": 898.71,
+        "saleValue": 0,
+        "tenantName": "João de Paula ( funcionario)",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 2438,
+          "03/2026": 0,
+          "04/2026": 898.71
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 32,
+        "label": "ap 82 com vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 378228.69,
+        "tenantName": "",
+        "notes": "À venda por R$ 378,228.69.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 33,
+        "label": "ap 83 com vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 378228.69,
+        "tenantName": "",
+        "notes": "À venda por R$ 378,228.69.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 34,
+        "label": "ap 84 com vaga",
+        "status": "alugado",
+        "rentValue": 2300,
+        "saleValue": 0,
+        "tenantName": "Bianca Ramalho",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 2300,
+          "03/2026": 2300,
+          "04/2026": 2300
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 35,
+        "label": "ap 91 com vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 383227.69,
+        "tenantName": "",
+        "notes": "À venda por R$ 383,227.69.",
+        "monthlyReceipts": {
+          "02/2026": 0
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 36,
+        "label": "ap 92 com vaga",
+        "status": "vendido",
+        "rentValue": 0,
+        "saleValue": 0,
+        "tenantName": "",
+        "notes": "Status original: Vendido",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 37,
+        "label": "ap 93 com vaga",
+        "status": "alugado",
+        "rentValue": 1610,
+        "saleValue": 0,
+        "tenantName": "Jose luiz",
+        "notes": "Status original: Alugado",
+        "monthlyReceipts": {
+          "02/2026": 0,
+          "03/2026": 0,
+          "04/2026": 1610
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 38,
+        "label": "ap 94 com vaga",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 383228.69,
+        "tenantName": "",
+        "notes": "À venda por R$ 383,228.69.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 13,
+    "name": "R. Bittencourt 141",
+    "address": "R. Bittencourt 141 sala 14",
+    "totalUnits": 3,
+    "units": [
+      {
+        "id": 1,
+        "label": "sala 14",
+        "status": "vendido",
+        "rentValue": 0,
+        "saleValue": 130000.0,
+        "tenantName": "Taylor Prado e Julio Cesar",
+        "notes": "Status original: Vendido",
+        "monthlyReceipts": {
+          "04/2026": 20000
+        },
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 2,
+        "label": "sala 15",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 150000.0,
+        "tenantName": "",
+        "notes": "À venda por R$ 150,000.00.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 3,
+        "label": "sala 16",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 150000.0,
+        "tenantName": "",
+        "notes": "À venda por R$ 150,000.00.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 14,
+    "name": "Bertioga - Pass. dos Meros",
+    "address": "Av. Anchieta 9108 Pass dos Meros 23 M 3 bertioga",
+    "totalUnits": 2,
+    "units": [
+      {
+        "id": 1,
+        "label": "Pass dos Meros 23 M 3",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 5400000.0,
+        "tenantName": "",
+        "notes": "À venda por R$ 5,400,000.00.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      },
+      {
+        "id": 2,
+        "label": "Pass dos Meros 32 M 3",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 7500000.0,
+        "tenantName": "",
+        "notes": "À venda por R$ 7,500,000.00.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
+      }
+    ]
+  },
+  {
+    "id": 15,
+    "name": "Rua Dr. Romeu Ferro",
+    "address": "Rua Dr. Romeu Ferro",
+    "totalUnits": 1,
+    "units": [
+      {
+        "id": 1,
+        "label": "Rua Dr. Romeu Ferro",
+        "status": "disponivel",
+        "rentValue": 0,
+        "saleValue": 2900000.0,
+        "tenantName": "",
+        "notes": "À venda por R$ 2,900,000.00.",
+        "monthlyReceipts": {},
+        "rentStartDate": "2026-02-01"
       }
     ]
   }
