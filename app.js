@@ -494,6 +494,39 @@ function renderBuildingCard(building) {
 }
 window.renderBuildingCard = renderBuildingCard;
 
+window.openAddImovelModal = () => {
+    const modal = document.getElementById('modal-add-building');
+    if (modal) modal.classList.add('visible');
+    else console.error('Modal modal-add-building não encontrado!');
+};
+
+// Handler para o formulário de novo imóvel
+document.addEventListener('DOMContentLoaded', () => {
+    const form = document.getElementById('form-add-building');
+    if (form) {
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            const name = document.getElementById('add-building-name').value;
+            const address = document.getElementById('add-building-address').value;
+            
+            const newBuilding = {
+                id: Date.now(),
+                name: name,
+                address: address,
+                totalUnits: 0,
+                units: []
+            };
+            
+            real_estate.push(newBuilding);
+            await saveRealEstate();
+            updateRealEstateUI();
+            
+            document.getElementById('modal-add-building').classList.remove('visible');
+            form.reset();
+        });
+    }
+});
+
 function updateRealEstateUI() {
     const grid = document.getElementById('re-buildings-grid');
     if (!grid) return;
