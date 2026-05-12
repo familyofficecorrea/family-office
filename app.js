@@ -2206,8 +2206,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const revs = calcMonthRevs(d);
             const totalMonth = revs.mRent + revs.mInst;
             
-            if (i === 0) kpiThisMonth = totalMonth;
-            if (i === 1) kpiLastMonth = totalMonth;
+            if (i === 1) kpiThisMonth = totalMonth;
+            if (i === 2) kpiLastMonth = totalMonth;
             if (d.getFullYear() === today.getFullYear()) {
                 kpiYTD_Rent += revs.mRent;
                 kpiYTD_Inst += revs.mInst; // Voltar a somar apenas o caixa real (entrada + parcelas) no YTD
@@ -2260,8 +2260,20 @@ document.addEventListener('DOMContentLoaded', async () => {
         const elMom = document.getElementById('kpi-mom-change');
         const elYtd = document.getElementById('kpi-ytd');
 
-        if (elThis) elThis.textContent = formatCurrency(kpiThisMonth);
-        if (elLast) elLast.textContent = formatCurrency(kpiLastMonth);
+        const monthNamesFull = ['Janeiro', 'Fevereiro', 'Março', 'Abril', 'Maio', 'Junho', 'Julho', 'Agosto', 'Setembro', 'Outubro', 'Novembro', 'Dezembro'];
+        const dateThis = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+        const dateLast = new Date(today.getFullYear(), today.getMonth() - 2, 1);
+
+        if (elThis) {
+            elThis.textContent = formatCurrency(kpiThisMonth);
+            const label = elThis.parentElement.querySelector('h3');
+            if (label) label.textContent = `Faturamento ${monthNamesFull[dateThis.getMonth()]}`;
+        }
+        if (elLast) {
+            elLast.textContent = formatCurrency(kpiLastMonth);
+            const label = elLast.parentElement.querySelector('h3');
+            if (label) label.textContent = `Faturamento ${monthNamesFull[dateLast.getMonth()]}`;
+        }
         
         if (elYtd) {
             const totalYtd = kpiYTD_Rent + kpiYTD_Inst;
