@@ -3722,6 +3722,12 @@ document.addEventListener('DOMContentLoaded', async () => {
                 const uLabel = normalize(unit.label || '');
                 const fullAddr = `${bName} ${bAddr} ${uLabel}`;
                 
+                const numA = aLower.match(/\d+/);
+                const numFull = fullAddr.match(/\d+/);
+                if (numA && numFull && numA[0] !== numFull[0]) {
+                    return false;
+                }
+                
                 if (aLower.length > 5 && fullAddr.includes(aLower)) return true;
                 if (aLower.length > 5 && aLower.includes(uLabel) && uLabel.length > 3) return true;
                 
