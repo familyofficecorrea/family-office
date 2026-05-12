@@ -3298,22 +3298,31 @@ document.addEventListener('DOMContentLoaded', async () => {
                 };
                 
                 const clientNameLower = clientName.toLowerCase();
-                
-                // Find ALL units matching this tenant or address
                 const addressLower = address ? normalize(address) : '';
-                const matchingUnits = allUnits.filter(({ building, unit }) => {
-                    const tenantMatch = unit.tenantName && normalize(unit.tenantName) === normalize(clientName);
-                    const labelMatch = clientName && normalize(clientName).includes(normalize(unit.label));
-                    
+                
+                let bestMatch = null;
+                const addrMatches = allUnits.filter(({ building, unit }) => {
                     const bAddr = normalize(building.address || '');
                     const bName = normalize(building.name || '');
                     const uLabel = normalize(unit.label || '');
                     const fullAddr = `${bName} ${bAddr} ${uLabel}`;
-                    
-                    const addrMatch = addressLower && fullAddr.includes(addressLower);
-                    
-                    return tenantMatch || labelMatch || addrMatch;
+                    return addressLower && fullAddr.includes(addressLower);
                 });
+                
+                if (addrMatches.length > 0) {
+                    bestMatch = addrMatches[0];
+                } else {
+                    const tenantMatches = allUnits.filter(({ unit }) => {
+                        const tenantMatch = unit.tenantName && normalize(unit.tenantName) === normalize(clientName);
+                        const labelMatch = clientName && normalize(clientName).includes(normalize(unit.label));
+                        return tenantMatch || labelMatch;
+                    });
+                    if (tenantMatches.length > 0) {
+                        bestMatch = tenantMatches[0];
+                    }
+                }
+                
+                const matchingUnits = bestMatch ? [bestMatch] : [];
 
                 if (matchingUnits.length > 0) {
                     // Calculate expected total sum for these units
@@ -3721,17 +3730,8 @@ document.addEventListener('DOMContentLoaded', async () => {
             const aLower = normalize(address);
             const tLower = normalize(tenant);
 
-            const matchingUnits = allUnits.filter(({ building, unit }) => {
-                // Match by tenant name
-                if (tLower && unit.tenantName) {
-                    const existingTenant = normalize(unit.tenantName);
-                    if (existingTenant === tLower) return true;
-                    // Partial match (at least 8 chars)
-                    if (tLower.length >= 8 && existingTenant.includes(tLower.substring(0, 8))) return true;
-                    if (existingTenant.length >= 8 && tLower.includes(existingTenant.substring(0, 8))) return true;
-                }
-                
-                // Match by address / label
+            let bestMatch = null;
+            const addrMatches = allUnits.filter(({ building, unit }) => {
                 const bAddr = normalize(building.address || '');
                 const bName = normalize(building.name || '');
                 const uLabel = normalize(unit.label || '');
@@ -3739,18 +3739,32 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 const numA = aLower.match(/\d+/);
                 const numFull = fullAddr.match(/\d+/);
-                if (numA && numFull && numA[0] !== numFull[0]) {
-                    return false;
-                }
+                if (numA && numFull && numA[0] !== numFull[0]) return false;
                 
                 if (aLower.length > 5 && fullAddr.includes(aLower)) return true;
                 if (aLower.length > 5 && aLower.includes(uLabel) && uLabel.length > 3) return true;
-                
-                // Try matching unit label inside address (e.g. "Odzun ap 14" ↔ "ap 14")
                 if (uLabel.length > 3 && aLower.includes(uLabel)) return true;
-
                 return false;
             });
+            
+            if (addrMatches.length > 0) {
+                bestMatch = addrMatches[0];
+            } else {
+                const tenantMatches = allUnits.filter(({ unit }) => {
+                    if (tLower && unit.tenantName) {
+                        const existingTenant = normalize(unit.tenantName);
+                        if (existingTenant === tLower) return true;
+                        if (tLower.length >= 8 && existingTenant.includes(tLower.substring(0, 8))) return true;
+                        if (existingTenant.length >= 8 && tLower.includes(existingTenant.substring(0, 8))) return true;
+                    }
+                    return false;
+                });
+                if (tenantMatches.length > 0) {
+                    bestMatch = tenantMatches[0];
+                }
+            }
+            
+            const matchingUnits = bestMatch ? [bestMatch] : [];
 
             // Extract monthly values
             const receipts = {};
