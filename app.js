@@ -2219,14 +2219,11 @@ document.addEventListener('DOMContentLoaded', async () => {
             for (let i = MONTHS_BACK; i >= 0; i--) {
                 const d = new Date(today.getFullYear(), today.getMonth() - i, 1);
                 
-                const april2026 = new Date(2026, 3, 1);
-                if (d >= april2026) {
-                    const monthStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
-                    labels.push(monthStr);
-                    const revs = calcMonthRevs(d);
-                    rentData.push(revs.mRent);
-                    installmentsData.push(revs.mInst);
-                }
+                const monthStr = `${String(d.getMonth() + 1).padStart(2, '0')}/${String(d.getFullYear()).slice(-2)}`;
+                labels.push(monthStr);
+                const revs = calcMonthRevs(d);
+                rentData.push(revs.mRent);
+                installmentsData.push(revs.mInst);
             }
         } else {
             // '12y' timeframe
