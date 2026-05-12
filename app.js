@@ -3186,6 +3186,7 @@ document.addEventListener('DOMContentLoaded', async () => {
             let clientName = '';
             let value = 0;
             let date = '';
+            let address = '';
             let isReceived = false;
             let hasValue = false;
 
@@ -3195,6 +3196,11 @@ document.addEventListener('DOMContentLoaded', async () => {
                 // Client name detection
                 if (k.includes('cliente') || k.includes('nome do cliente')) {
                     clientName = String(row[key] || '').trim();
+                }
+                
+                // Address detection
+                if (k.includes('endere') || k.includes('imovel')) {
+                    address = String(row[key] || '').trim();
                 }
                 
                 // Value detection (prioritize "valor recebido" columns)
@@ -3293,11 +3299,20 @@ document.addEventListener('DOMContentLoaded', async () => {
                 
                 const clientNameLower = clientName.toLowerCase();
                 
-                // Find ALL units matching this tenant (supports multi-unit tenants)
-                const matchingUnits = allUnits.filter(({ unit }) => {
-                    const tenantMatch = unit.tenantName && unit.tenantName.toLowerCase() === clientNameLower;
-                    const labelMatch = clientNameLower.includes(unit.label.toLowerCase());
-                    return tenantMatch || labelMatch;
+                // Find ALL units matching this tenant or address
+                const addressLower = address ? normalize(address) : '';
+                const matchingUnits = allUnits.filter(({ building, unit }) => {
+                    const tenantMatch = unit.tenantName && normalize(unit.tenantName) === normalize(clientName);
+                    const labelMatch = clientName && normalize(clientName).includes(normalize(unit.label));
+                    
+                    const bAddr = normalize(building.address || '');
+                    const bName = normalize(building.name || '');
+                    const uLabel = normalize(unit.label || '');
+                    const fullAddr = `${bName} ${bAddr} ${uLabel}`;
+                    
+                    const addrMatch = addressLower && fullAddr.includes(addressLower);
+                    
+                    return tenantMatch || labelMatch || addrMatch;
                 });
 
                 if (matchingUnits.length > 0) {
