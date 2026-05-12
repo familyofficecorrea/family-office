@@ -2075,9 +2075,9 @@ document.addEventListener('DOMContentLoaded', async () => {
             }
 
             let valueHtml = '';
-            if ((u.status === 'alugado' || u.status === 'inadimplente') && u.rentValue) {
+            if (u.status === 'alugado' || u.status === 'inadimplente') {
                 const effective = getEffectiveRent(u);
-                const displayVal = lastPayment > 0 ? formatCurrency(lastPayment) : formatCurrency(effective);
+                const displayVal = lastPayment > 0 ? formatCurrency(lastPayment) : (effective > 0 ? formatCurrency(effective) : formatCurrency(u.rentValue || 0));
                 valueHtml = `<div class="unit-card-value rent">${displayVal}${variationHtml}${_showNetYield && effective < u.rentValue ? ' <span style="font-size: 10px; opacity: 0.8;">(Líquido)</span>' : ''}</div>`;
             } else if (u.status === 'vendido' && u.saleValue) {
                 const downPay = u.downPayment || 0;
