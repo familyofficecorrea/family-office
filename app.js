@@ -2045,11 +2045,40 @@ document.addEventListener('DOMContentLoaded', async () => {
 
         unitsGrid.innerHTML = displayUnits.map(u => {
             const statusLabel = u.status === 'alugado' ? 'Alugado' : u.status === 'vendido' ? 'Vendido' : u.status === 'inadimplente' ? 'Inadimplente' : 'Disponível';
+            
+            let lastPayment = 0;
+            let prevPayment = 0;
+            let variation = 0;
+            let variationHtml = '';
+
+            if (u.monthlyReceipts) {
+                const keys = Object.keys(u.monthlyReceipts);
+                const sortedKeys = keys.sort((a, b) => {
+                    const [mA, yA] = a.split('/').map(Number);
+                    const [mB, yB] = b.split('/').map(Number);
+                    return (yB - yA) || (mB - mA); // Descending order
+                });
+                
+                if (sortedKeys.length >= 1) {
+                    lastPayment = u.monthlyReceipts[sortedKeys[0]];
+                }
+                if (sortedKeys.length >= 2) {
+                    prevPayment = u.monthlyReceipts[sortedKeys[1]];
+                }
+                
+                if (prevPayment > 0) {
+                    variation = ((lastPayment - prevPayment) / prevPayment) * 100;
+                    const sign = variation > 0 ? '+' : '';
+                    const color = variation > 0 ? 'var(--accent-green)' : (variation < 0 ? 'var(--accent-red)' : 'var(--text-secondary)');
+                    variationHtml = `<span style="color: ${color}; font-size: 11px; font-weight: 600; margin-left: 6px;">${sign}${variation.toFixed(1)}%</span>`;
+                }
+            }
+
             let valueHtml = '';
             if ((u.status === 'alugado' || u.status === 'inadimplente') && u.rentValue) {
                 const effective = getEffectiveRent(u);
-                const displayVal = formatCurrency(effective) + '/mês';
-                valueHtml = `<div class="unit-card-value rent">${displayVal}${_showNetYield && effective < u.rentValue ? ' <span style="font-size: 10px; opacity: 0.8;">(Líquido)</span>' : ''}</div>`;
+                const displayVal = lastPayment > 0 ? formatCurrency(lastPayment) : formatCurrency(effective);
+                valueHtml = `<div class="unit-card-value rent">${displayVal}${variationHtml}${_showNetYield && effective < u.rentValue ? ' <span style="font-size: 10px; opacity: 0.8;">(Líquido)</span>' : ''}</div>`;
             } else if (u.status === 'vendido' && u.saleValue) {
                 const downPay = u.downPayment || 0;
                 const count = u.installmentCount || 0;
